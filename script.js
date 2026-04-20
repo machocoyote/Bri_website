@@ -34,14 +34,39 @@ const observer = new IntersectionObserver(
 
 revealEls.forEach(el => observer.observe(el));
 
-// Contact form
+// Contact form — Formspree
 const form = document.getElementById('contactForm');
 const formSuccess = document.getElementById('formSuccess');
+const submitBtn = document.getElementById('submitBtn');
+const formError = document.getElementById('formError');
 
-form.addEventListener('submit', e => {
+form.addEventListener('submit', async e => {
   e.preventDefault();
-  form.style.display = 'none';
-  formSuccess.classList.add('show');
+  const formId = form.dataset.formspreeId;
+  if (!formId || formId === 'YOUR_FORM_ID') {
+    formError.textContent = 'Form not configured yet. Please contact us directly by email or phone.';
+    return;
+  }
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+  formError.textContent = '';
+  try {
+    const res = await fetch(`https://formspree.io/f/${formId}`, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: new FormData(form),
+    });
+    if (res.ok) {
+      form.style.display = 'none';
+      formSuccess.classList.add('show');
+    } else {
+      throw new Error();
+    }
+  } catch {
+    formError.textContent = 'Something went wrong. Please try emailing us directly at beflourishedflorals@gmail.com.';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send Message';
+  }
 });
 
 // Smooth scroll for all anchor links

@@ -238,7 +238,7 @@
       </div>
     </div>
     <div class="contact-right">
-      <form class="contact-form" id="contactForm">
+      <form class="contact-form" id="contactForm" data-formspree-id="YOUR_FORM_ID">
         <div class="form-row">
           <div class="form-group">
             <label for="firstName">First Name</label>
@@ -274,8 +274,9 @@
           <label for="message">Tell Us About Your Vision</label>
           <textarea id="message" name="message" rows="4" placeholder="Share details about your event, date, style, colors, budget..."></textarea>
         </div>
-        <button type="submit" class="btn-primary btn-full">Send Message</button>
+        <button type="submit" class="btn-primary btn-full" id="submitBtn">Send Message</button>
         <p class="form-note">We typically respond within 24 hours.</p>
+        <p class="form-error" id="formError"></p>
       </form>
       <div class="form-success" id="formSuccess">
         <div class="success-icon">&#10003;</div>
