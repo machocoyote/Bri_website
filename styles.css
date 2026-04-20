@@ -464,30 +464,6 @@ a { color: inherit; text-decoration: none; }
   margin-top: 1.5rem;
 }
 
-.about-stats {
-  display: flex;
-  gap: 2.5rem;
-  margin-top: 2.5rem;
-  padding-top: 2.5rem;
-  border-top: 1px solid var(--border);
-}
-
-.stat { display: flex; flex-direction: column; }
-
-.stat-num {
-  font-family: 'Playfair Display', serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--gold-lt);
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--cream-dk);
-  margin-top: 0.2rem;
-}
 
 /* ============================================================
    SERVICES
@@ -644,58 +620,6 @@ a { color: inherit; text-decoration: none; }
   font-style: italic;
 }
 
-/* ============================================================
-   TESTIMONIALS
-   ============================================================ */
-.testimonials {
-  padding: 7rem 8%;
-  background: var(--bg);
-}
-
-.testimonials-header {
-  text-align: center;
-  margin-bottom: 4rem;
-}
-
-.testimonials-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5px;
-  background: var(--border);
-}
-
-.testimonial-card {
-  background: var(--bg2);
-  padding: 3rem 2.5rem;
-}
-
-.featured-testimonial {
-  background: var(--bg3);
-  border-top: 2px solid var(--gold);
-}
-
-.stars {
-  color: var(--gold);
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
-  margin-bottom: 1.25rem;
-}
-
-.testimonial-card p {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.1rem;
-  font-style: italic;
-  line-height: 1.85;
-  color: var(--cream-dk);
-  margin-bottom: 1.25rem;
-}
-
-.testimonial-author {
-  font-size: 0.7rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
 
 /* ============================================================
    CONTACT
@@ -979,15 +903,7 @@ a { color: inherit; text-decoration: none; }
     grid-template-rows: 220px 220px;
   }
 
-  .testimonials-grid {
-    grid-template-columns: 1fr;
-    background: none;
-    gap: 1.5rem;
-  }
-
-  .testimonial-card { border: 1px solid var(--border); }
-
-  .contact {
+.contact {
     grid-template-columns: 1fr;
     gap: 4rem;
   }
@@ -1046,9 +962,7 @@ a { color: inherit; text-decoration: none; }
   .testimonials { padding: 5rem 6%; }
   .contact { padding: 5rem 6%; }
 
-  .about-stats { flex-direction: column; gap: 1.5rem; }
-
-  .gallery-grid {
+.gallery-grid {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(6, 220px);
   }

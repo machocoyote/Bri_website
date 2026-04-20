@@ -18,7 +18,7 @@ mobileLinks.forEach(link => {
 
 // Scroll reveal
 const revealEls = document.querySelectorAll(
-  '.about-image-col, .about-text-col, .service-card, .gallery-item, .testimonial-card, .contact-left, .contact-right, .stat'
+  '.about-image-col, .about-text-col, .service-card, .gallery-item, .contact-left, .contact-right'
 );
 
 revealEls.forEach((el, i) => {
