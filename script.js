@@ -111,9 +111,10 @@ const HOLIDAYS = [
   },
   {
     name:       "Mother's Day",
-    tagline:    "Surprise Mom with a beautiful arrangement",
-    cta:        "Order for Mom",
+    tagline:    "Pre-orders now open — secure Mom's arrangement before we fill up!",
+    cta:        "Pre-Order Now",
     windowDays: 45,
+    pinned:     true,
     getDate:    (y) => {
       const d = new Date(y, 4, 1);
       const firstSun = d.getDay() === 0 ? 1 : 8 - d.getDay();
@@ -201,8 +202,8 @@ const HOLIDAYS = [
 
   if (candidates.length === 0) return;
 
-  // Show the nearest upcoming holiday
-  candidates.sort((a, b) => a.days - b.days);
+  // Pinned holidays take priority, then sort by nearest date
+  candidates.sort((a, b) => (b.h.pinned ? 1 : 0) - (a.h.pinned ? 1 : 0) || a.days - b.days);
   const { h, days } = candidates[0];
 
   const countdownText = days === 0 ? 'Today!'
