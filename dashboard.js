@@ -3,27 +3,65 @@
 // ============================================================
 
 const DEFAULT_PASSWORD = 'flourish2026';
-const STORAGE_KEY  = 'bf_orders';
-const PW_KEY       = 'bf_pw';
+const STORAGE_KEY = 'bf_orders';
+const PW_KEY      = 'bf_pw';
 
-// ── State ──
-let orders   = [];
-let calYear  = new Date().getFullYear();
-let calMonth = new Date().getMonth();
-let activeView    = 'overview';
-let filterStatus  = 'all';
-let searchQuery   = '';
-let editingId     = null;
+let orders      = [];
+let calYear     = new Date().getFullYear();
+let calMonth    = new Date().getMonth();
+let activeView  = 'overview';
+let filterStatus = 'all';
+let searchQuery  = '';
+let editingId    = null;
 
 // ── Init ──
 function init() {
   orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  if (!localStorage.getItem(PW_KEY)) {
-    localStorage.setItem(PW_KEY, DEFAULT_PASSWORD);
-  }
-  if (sessionStorage.getItem('bf_auth') === '1') {
-    showApp();
-  }
+  if (!localStorage.getItem(PW_KEY)) localStorage.setItem(PW_KEY, DEFAULT_PASSWORD);
+  if (sessionStorage.getItem('bf_auth') === '1') showApp();
+}
+
+// ============================================================
+//  TOAST NOTIFICATIONS
+// ============================================================
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || '✓'}</span><span>${message}</span>`;
+  container.appendChild(toast);
+  requestAnimationFrame(() => { requestAnimationFrame(() => toast.classList.add('show')); });
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3200);
+}
+
+// ============================================================
+//  CONFIRM DIALOG
+// ============================================================
+function showConfirm(message, confirmText = 'Delete') {
+  return new Promise(resolve => {
+    const backdrop  = document.getElementById('confirmBackdrop');
+    const msgEl     = document.getElementById('confirmMessage');
+    const yesBtn    = document.getElementById('confirmYes');
+    const noBtn     = document.getElementById('confirmNo');
+    msgEl.textContent = message;
+    yesBtn.textContent = confirmText;
+    backdrop.classList.add('open');
+
+    function cleanup(val) {
+      backdrop.classList.remove('open');
+      yesBtn.removeEventListener('click', onYes);
+      noBtn.removeEventListener('click', onNo);
+      resolve(val);
+    }
+    function onYes() { cleanup(true);  }
+    function onNo()  { cleanup(false); }
+    yesBtn.addEventListener('click', onYes);
+    noBtn.addEventListener('click', onNo);
+  });
 }
 
 // ============================================================
@@ -31,7 +69,7 @@ function init() {
 // ============================================================
 document.getElementById('loginForm').addEventListener('submit', e => {
   e.preventDefault();
-  const pw = document.getElementById('loginPassword').value;
+  const pw  = document.getElementById('loginPassword').value;
   const err = document.getElementById('loginError');
   if (pw === localStorage.getItem(PW_KEY)) {
     sessionStorage.setItem('bf_auth', '1');
@@ -39,6 +77,7 @@ document.getElementById('loginForm').addEventListener('submit', e => {
     showApp();
   } else {
     err.textContent = 'Incorrect password. Try again.';
+    document.getElementById('loginPassword').select();
   }
 });
 
@@ -73,41 +112,50 @@ function switchView(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${view}`).classList.add('active');
-  document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
+  document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
   const titles = { overview: 'Overview', orders: 'Orders', calendar: 'Calendar', settings: 'Settings' };
   document.getElementById('topbarTitle').textContent = titles[view] || '';
   if (view === 'overview') renderOverview();
-  if (view === 'orders')   renderOrders();
+  if (view === 'orders')   { updateTabCounts(); renderOrders(); }
   if (view === 'calendar') renderCalendar();
 }
 
 // Mobile sidebar
-const sidebar  = document.getElementById('sidebar');
-document.getElementById('menuBtn').addEventListener('click', () => sidebar.classList.toggle('open'));
+const sidebar        = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+document.getElementById('menuBtn').addEventListener('click', openSidebar);
 document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
-function closeSidebar() { sidebar.classList.remove('open'); }
+sidebarOverlay.addEventListener('click', closeSidebar);
+
+function openSidebar()  { sidebar.classList.add('open'); sidebarOverlay.classList.add('show'); }
+function closeSidebar() { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('show'); }
+
+// Escape key closes any open panel/modal
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('modalBackdrop').classList.contains('open')) { closeModal(); return; }
+  if (document.getElementById('detailBackdrop').classList.contains('open')) { closeDetail(); return; }
+  if (document.getElementById('confirmBackdrop').classList.contains('open')) {
+    document.getElementById('confirmBackdrop').classList.remove('open'); return;
+  }
+  closeSidebar();
+});
 
 // ============================================================
 //  DATA HELPERS
 // ============================================================
-function saveOrders() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-}
-
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-}
+function saveOrders() { localStorage.setItem(STORAGE_KEY, JSON.stringify(orders)); }
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 function fmt(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function fmtShort(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function fmtMoney(n) {
@@ -115,15 +163,12 @@ function fmtMoney(n) {
   return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function badgeClass(status) {
-  return 'badge badge-' + status.replace(/\s+/g, '-');
-}
+function badgeClass(status) { return 'badge badge-' + status.replace(/\s+/g, '-'); }
 
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(dateStr + 'T00:00:00');
-  return Math.round((d - today) / 86400000);
+  return Math.round((new Date(dateStr + 'T00:00:00') - today) / 86400000);
 }
 
 // ============================================================
@@ -154,21 +199,33 @@ function renderOverview() {
   }).length;
   document.getElementById('stat-upcoming').textContent = upcoming;
 
+  // Outstanding balance (unpaid balances on active orders)
+  const outstanding = orders
+    .filter(o => !o.balancePaid && o.status !== 'Cancelled' && o.status !== 'Delivered')
+    .reduce((sum, o) => {
+      const bal = (parseFloat(o.totalPrice) || 0) - (o.depositPaid ? (parseFloat(o.depositAmount) || 0) : 0);
+      return sum + Math.max(0, bal);
+    }, 0);
+  document.getElementById('stat-outstanding').textContent = fmtMoney(outstanding);
+
   // Recent orders (last 5)
   const recent = [...orders].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
   const recentEl = document.getElementById('recentOrdersList');
   if (recent.length === 0) {
-    recentEl.innerHTML = '<p class="empty-msg">No orders yet. Add your first one!</p>';
+    recentEl.innerHTML = `
+      <div style="text-align:center;padding:2rem 0">
+        <div style="font-size:2rem;color:var(--gold-dk);opacity:0.4;margin-bottom:0.5rem">&#10047;</div>
+        <p style="font-size:0.82rem;color:var(--cream-dk);opacity:0.6">No orders yet.<br>Tap <strong>+ New Order</strong> to add your first one.</p>
+      </div>`;
   } else {
     recentEl.innerHTML = recent.map(o => `
       <div class="recent-item" data-id="${o.id}">
         <div>
           <div class="recent-name">${o.customerName}</div>
-          <div class="recent-service">${o.service}</div>
+          <div class="recent-service">${o.service || '—'}</div>
         </div>
         <span class="${badgeClass(o.status)}">${o.status}</span>
-      </div>
-    `).join('');
+      </div>`).join('');
     recentEl.querySelectorAll('.recent-item').forEach(el => {
       el.addEventListener('click', () => openDetail(el.dataset.id));
     });
@@ -182,20 +239,21 @@ function renderOverview() {
 
   const upcomingEl = document.getElementById('upcomingList');
   if (soon.length === 0) {
-    upcomingEl.innerHTML = '<p class="empty-msg">No upcoming events in the next 30 days.</p>';
+    upcomingEl.innerHTML = '<p style="font-size:0.82rem;color:var(--cream-dk);opacity:0.6;text-align:center;padding:1.5rem 0">No upcoming events in the next 30 days.</p>';
   } else {
     upcomingEl.innerHTML = soon.map(o => {
       const d = daysUntil(o.eventDate);
-      const label = d === 0 ? 'Today!' : d === 1 ? 'Tomorrow' : `In ${d} days`;
+      const urgency = d === 0 ? '<span class="urgency-pill urgency-today">Today!</span>'
+                    : d === 1 ? '<span class="urgency-pill urgency-tomorrow">Tomorrow</span>'
+                    : d <= 5  ? `<span class="urgency-pill urgency-soon">In ${d} days</span>` : '';
       return `
         <div class="upcoming-item" data-id="${o.id}">
           <div>
-            <div class="recent-name">${o.customerName}</div>
-            <div class="recent-service">${o.service}</div>
+            <div class="recent-name">${o.customerName}${urgency}</div>
+            <div class="recent-service">${o.service || '—'}</div>
           </div>
-          <div class="upcoming-date">${fmtShort(o.eventDate)}<br><small style="color:var(--gold-dk)">${label}</small></div>
-        </div>
-      `;
+          <div class="upcoming-date">${fmtShort(o.eventDate)}</div>
+        </div>`;
     }).join('');
     upcomingEl.querySelectorAll('.upcoming-item').forEach(el => {
       el.addEventListener('click', () => openDetail(el.dataset.id));
@@ -206,8 +264,30 @@ function renderOverview() {
 // ============================================================
 //  ORDERS TABLE
 // ============================================================
-document.getElementById('searchInput').addEventListener('input', e => {
+function updateTabCounts() {
+  const counts = {};
+  orders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    const s = tab.dataset.status;
+    const n = s === 'all' ? orders.length : (counts[s] || 0);
+    tab.textContent = `${s === 'all' ? 'All' : s} (${n})`;
+  });
+}
+
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+
+searchInput.addEventListener('input', e => {
   searchQuery = e.target.value.toLowerCase();
+  searchClear.classList.toggle('show', searchQuery.length > 0);
+  renderOrders();
+});
+
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchQuery = '';
+  searchClear.classList.remove('show');
+  searchInput.focus();
   renderOrders();
 });
 
@@ -233,8 +313,8 @@ function renderOrders() {
   }
   list.sort((a, b) => b.createdAt - a.createdAt);
 
-  const tbody  = document.getElementById('ordersBody');
-  const empty  = document.getElementById('ordersEmpty');
+  const tbody = document.getElementById('ordersBody');
+  const empty = document.getElementById('ordersEmpty');
 
   if (list.length === 0) {
     tbody.innerHTML = '';
@@ -245,14 +325,24 @@ function renderOrders() {
 
   tbody.innerHTML = list.map(o => {
     const balance = (parseFloat(o.totalPrice) || 0) - (parseFloat(o.depositAmount) || 0);
+    const days    = daysUntil(o.eventDate);
+    const active  = o.status !== 'Delivered' && o.status !== 'Cancelled';
+    const rowClass = active && days !== null && days >= 0 && days <= 1 ? 'row-urgent'
+                   : active && days !== null && days >= 0 && days <= 6 ? 'row-warning' : '';
+    const urgencyPill = active && days !== null && days >= 0
+      ? days === 0 ? '<span class="urgency-pill urgency-today">Today</span>'
+      : days === 1 ? '<span class="urgency-pill urgency-tomorrow">Tomorrow</span>'
+      : days <= 6  ? `<span class="urgency-pill urgency-soon">${days}d</span>` : ''
+      : '';
+
     return `
-      <tr data-id="${o.id}">
+      <tr data-id="${o.id}" class="${rowClass}">
         <td>
           <div class="td-name">${o.customerName}</div>
           <div class="td-phone">${o.customerPhone || ''}</div>
         </td>
         <td class="td-service">${o.service || '—'}</td>
-        <td class="td-date">${fmt(o.eventDate)}</td>
+        <td class="td-date">${fmt(o.eventDate)}${urgencyPill}</td>
         <td>${o.source || '—'}</td>
         <td class="td-price">${fmtMoney(o.totalPrice)}</td>
         <td class="td-deposit">
@@ -267,8 +357,7 @@ function renderOrders() {
         </td>
         <td><span class="${badgeClass(o.status)}">${o.status}</span></td>
         <td><button class="action-btn" data-id="${o.id}">View</button></td>
-      </tr>
-    `;
+      </tr>`;
   }).join('');
 
   tbody.querySelectorAll('tr').forEach(row => {
@@ -298,48 +387,33 @@ function renderCalendar() {
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('calMonth').textContent = `${monthNames[calMonth]} ${calYear}`;
 
-  const grid = document.getElementById('calendarGrid');
-  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const today = new Date(); today.setHours(0,0,0,0);
+  const grid    = document.getElementById('calendarGrid');
+  const days    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const first   = new Date(calYear, calMonth, 1).getDay();
+  const total   = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevEnd = new Date(calYear, calMonth, 0).getDate();
 
   let html = days.map(d => `<div class="cal-day-header">${d}</div>`).join('');
 
-  const first = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const prevDays = new Date(calYear, calMonth, 0).getDate();
+  for (let i = first - 1; i >= 0; i--)
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${prevEnd - i}</div></div>`;
 
-  // Prev month padding
-  for (let i = first - 1; i >= 0; i--) {
-    html += `<div class="cal-day other-month"><div class="cal-day-num">${prevDays - i}</div></div>`;
-  }
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const thisDate = new Date(calYear, calMonth, d);
-    const isToday = thisDate.getTime() === today.getTime();
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-
+  for (let d = 1; d <= total; d++) {
+    const dateStr  = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday  = new Date(calYear, calMonth, d).getTime() === today.getTime();
     const dayOrders = orders.filter(o => o.eventDate === dateStr && o.status !== 'Cancelled');
-    const events = dayOrders.map(o => {
-      const cls = o.status.replace(/\s+/g, '-');
-      return `<span class="cal-event ${cls}" data-id="${o.id}">${o.customerName}</span>`;
-    }).join('');
-
-    html += `
-      <div class="cal-day${isToday ? ' today' : ''}">
-        <div class="cal-day-num">${d}</div>
-        ${events}
-      </div>`;
+    const events   = dayOrders.map(o =>
+      `<span class="cal-event ${o.status.replace(/\s+/g,'-')}" data-id="${o.id}">${o.customerName}</span>`
+    ).join('');
+    html += `<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${d}</div>${events}</div>`;
   }
 
-  // Next month padding
-  const totalCells = first + daysInMonth;
-  const remainder = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-  for (let i = 1; i <= remainder; i++) {
+  const remainder = (first + total) % 7;
+  if (remainder) for (let i = 1; i <= 7 - remainder; i++)
     html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
-  }
 
   grid.innerHTML = html;
-
   grid.querySelectorAll('.cal-event').forEach(el => {
     el.addEventListener('click', e => { e.stopPropagation(); openDetail(el.dataset.id); });
   });
@@ -364,28 +438,29 @@ function openModal(id) {
   if (id) {
     const o = orders.find(x => x.id === id);
     if (!o) return;
-    document.getElementById('orderId').value        = o.id;
-    document.getElementById('customerName').value   = o.customerName || '';
-    document.getElementById('customerPhone').value  = o.customerPhone || '';
-    document.getElementById('customerEmail').value  = o.customerEmail || '';
-    document.getElementById('orderSource').value    = o.source || '';
-    document.getElementById('orderService').value   = o.service || '';
-    document.getElementById('eventDate').value      = o.eventDate || '';
-    document.getElementById('colorPalette').value   = o.colorPalette || '';
-    document.getElementById('flowerPrefs').value    = o.flowerPrefs || '';
-    document.getElementById('deliveryAddress').value= o.deliveryAddress || '';
-    document.getElementById('totalPrice').value     = o.totalPrice || '';
-    document.getElementById('depositAmount').value  = o.depositAmount || '';
-    document.getElementById('depositPaid').checked  = !!o.depositPaid;
-    document.getElementById('balancePaid').checked  = !!o.balancePaid;
-    document.getElementById('orderStatus').value    = o.status || 'New';
-    document.getElementById('orderNotes').value     = o.notes || '';
+    document.getElementById('orderId').value         = o.id;
+    document.getElementById('customerName').value    = o.customerName || '';
+    document.getElementById('customerPhone').value   = o.customerPhone || '';
+    document.getElementById('customerEmail').value   = o.customerEmail || '';
+    document.getElementById('orderSource').value     = o.source || '';
+    document.getElementById('orderService').value    = o.service || '';
+    document.getElementById('eventDate').value       = o.eventDate || '';
+    document.getElementById('colorPalette').value    = o.colorPalette || '';
+    document.getElementById('flowerPrefs').value     = o.flowerPrefs || '';
+    document.getElementById('deliveryAddress').value = o.deliveryAddress || '';
+    document.getElementById('totalPrice').value      = o.totalPrice || '';
+    document.getElementById('depositAmount').value   = o.depositAmount || '';
+    document.getElementById('depositPaid').checked   = !!o.depositPaid;
+    document.getElementById('balancePaid').checked   = !!o.balancePaid;
+    document.getElementById('orderStatus').value     = o.status || 'New';
+    document.getElementById('orderNotes').value      = o.notes || '';
   } else {
     orderForm.reset();
     document.getElementById('orderId').value = '';
   }
 
   modalBackdrop.classList.add('open');
+  setTimeout(() => document.getElementById('customerName').focus(), 100);
 }
 
 function closeModal() {
@@ -395,10 +470,11 @@ function closeModal() {
 
 orderForm.addEventListener('submit', e => {
   e.preventDefault();
-  const id = document.getElementById('orderId').value || genId();
+  const isNew = !editingId;
+  const id    = document.getElementById('orderId').value || genId();
   const order = {
     id,
-    createdAt:       editingId ? (orders.find(x => x.id === editingId)?.createdAt || Date.now()) : Date.now(),
+    createdAt:       isNew ? Date.now() : (orders.find(x => x.id === editingId)?.createdAt || Date.now()),
     customerName:    document.getElementById('customerName').value.trim(),
     customerPhone:   document.getElementById('customerPhone').value.trim(),
     customerEmail:   document.getElementById('customerEmail').value.trim(),
@@ -419,8 +495,10 @@ orderForm.addEventListener('submit', e => {
   if (editingId) {
     const idx = orders.findIndex(x => x.id === editingId);
     if (idx > -1) orders[idx] = order;
+    showToast('Order updated successfully.');
   } else {
     orders.unshift(order);
+    showToast('New order added!');
   }
 
   saveOrders();
@@ -428,19 +506,23 @@ orderForm.addEventListener('submit', e => {
   refreshCurrentView();
 });
 
-document.getElementById('deleteOrderBtn').addEventListener('click', () => {
+document.getElementById('deleteOrderBtn').addEventListener('click', async () => {
   if (!editingId) return;
-  if (!confirm('Delete this order? This cannot be undone.')) return;
-  orders = orders.filter(o => o.id !== editingId);
+  const o    = orders.find(x => x.id === editingId);
+  const name = o ? o.customerName : 'this order';
+  const confirmed = await showConfirm(`Delete order for ${name}? This cannot be undone.`, 'Delete');
+  if (!confirmed) return;
+  orders = orders.filter(x => x.id !== editingId);
   saveOrders();
   closeModal();
   closeDetail();
+  showToast('Order deleted.', 'info');
   refreshCurrentView();
 });
 
 function refreshCurrentView() {
   if (activeView === 'overview') renderOverview();
-  if (activeView === 'orders')   renderOrders();
+  if (activeView === 'orders')   { updateTabCounts(); renderOrders(); }
   if (activeView === 'calendar') renderCalendar();
 }
 
@@ -461,18 +543,23 @@ function openDetail(id) {
   const o = orders.find(x => x.id === id);
   if (!o) return;
   detailBackdrop.dataset.orderId = id;
-
   document.getElementById('detailName').textContent = o.customerName;
 
+  const days    = daysUntil(o.eventDate);
   const balance = (parseFloat(o.totalPrice) || 0) - (parseFloat(o.depositAmount) || 0);
+  const urgencyBanner = days !== null && days >= 0 && days <= 3 && o.status !== 'Delivered' && o.status !== 'Cancelled'
+    ? `<div style="background:rgba(192,80,80,0.15);border:1px solid rgba(192,80,80,0.3);padding:0.65rem 0.85rem;margin-bottom:1rem;font-size:0.8rem;color:#e08080;border-radius:2px">
+        &#9888; Event is ${days === 0 ? 'TODAY' : days === 1 ? 'TOMORROW' : `in ${days} days`}
+       </div>` : '';
 
   document.getElementById('detailBody').innerHTML = `
+    ${urgencyBanner}
     <div class="detail-row">
-      <div class="detail-label">Status</div>
+      <div class="detail-label">Status — update instantly</div>
       <div class="detail-value">
         <select class="status-select" id="detailStatusSelect">
           ${['New','Confirmed','In Progress','Ready','Delivered','Cancelled']
-            .map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            .map(s => `<option ${o.status===s?'selected':''}>${s}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -533,21 +620,22 @@ function openDetail(id) {
     <div class="detail-row">
       <div class="detail-label">Order Created</div>
       <div class="detail-value">${new Date(o.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
-    </div>
-  `;
+    </div>`;
 
-  // Quick status update
   document.getElementById('detailStatusSelect').addEventListener('change', e => {
     const idx = orders.findIndex(x => x.id === id);
-    if (idx > -1) { orders[idx].status = e.target.value; saveOrders(); refreshCurrentView(); }
+    if (idx > -1) {
+      orders[idx].status = e.target.value;
+      saveOrders();
+      showToast(`Status updated to "${e.target.value}".`);
+      refreshCurrentView();
+    }
   });
 
   detailBackdrop.classList.add('open');
 }
 
-function closeDetail() {
-  detailBackdrop.classList.remove('open');
-}
+function closeDetail() { detailBackdrop.classList.remove('open'); }
 
 // ============================================================
 //  SETTINGS
@@ -566,13 +654,14 @@ document.getElementById('passwordForm').addEventListener('submit', e => {
     msg.textContent = 'New passwords do not match.'; msg.className = 'pw-msg error'; return;
   }
   localStorage.setItem(PW_KEY, nw);
-  msg.textContent = 'Password updated successfully!'; msg.className = 'pw-msg success';
+  msg.textContent = 'Password updated!'; msg.className = 'pw-msg success';
+  showToast('Password updated successfully.');
   document.getElementById('passwordForm').reset();
 });
 
 // Export CSV
 document.getElementById('exportBtn').addEventListener('click', () => {
-  if (orders.length === 0) { alert('No orders to export.'); return; }
+  if (orders.length === 0) { showToast('No orders to export.', 'info'); return; }
   const headers = ['Name','Phone','Email','Source','Service','Event Date','Colors','Flowers','Delivery Address','Total','Deposit','Deposit Paid','Balance Paid','Status','Notes','Created'];
   const rows = orders.map(o => [
     o.customerName, o.customerPhone, o.customerEmail, o.source, o.service,
@@ -584,31 +673,33 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     new Date(o.createdAt).toLocaleDateString()
   ].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`));
 
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const csv  = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
   a.href = url;
   a.download = `be-flourished-orders-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+  showToast(`Exported ${orders.length} orders.`);
 });
 
 // Import JSON
-document.getElementById('importFile').addEventListener('change', e => {
+document.getElementById('importFile').addEventListener('change', async e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = async ev => {
     try {
       const data = JSON.parse(ev.target.result);
       if (!Array.isArray(data)) throw new Error();
-      if (!confirm(`Import ${data.length} orders? This will replace all current orders.`)) return;
+      const ok = await showConfirm(`Import ${data.length} orders? This will replace all current orders.`, 'Import');
+      if (!ok) return;
       orders = data;
       saveOrders();
-      alert('Import successful!');
+      showToast(`Imported ${data.length} orders.`);
       refreshCurrentView();
-    } catch { alert('Invalid backup file. Please use a valid JSON export.'); }
+    } catch { showToast('Invalid backup file.', 'error'); }
   };
   reader.readAsText(file);
   e.target.value = '';

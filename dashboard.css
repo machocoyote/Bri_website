@@ -17,6 +17,8 @@
   --status-ready:      #6bbf8e;
   --status-delivered:  #4a9e6b;
   --status-cancelled:  #c06060;
+  --urgent:            #c05050;
+  --warning:           #b87a30;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -263,7 +265,7 @@ a { color: inherit; text-decoration: none; }
    ============================================================ */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1px;
   background: var(--border);
   margin-bottom: 2rem;
@@ -275,7 +277,8 @@ a { color: inherit; text-decoration: none; }
   padding: 1.5rem 1.75rem;
 }
 
-.stat-card.accent { background: var(--bg3); border-top: 2px solid var(--gold); }
+.stat-card.accent   { background: var(--bg3); border-top: 2px solid var(--gold); }
+.stat-card.warning  { background: var(--bg3); border-top: 2px solid var(--warning); }
 
 .stat-label {
   font-size: 0.68rem;
@@ -970,10 +973,204 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
   .topbar { padding: 0.85rem 1rem; }
   .topbar-add { padding: 0.55rem 1rem; font-size: 0.7rem; }
   .modal-body { padding: 1.25rem; }
   .modal-header { padding: 1.25rem; }
   .modal-footer { padding: 1rem; }
+}
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem; right: 1.5rem;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  padding: 0.85rem 1.25rem;
+  font-size: 0.82rem;
+  color: var(--cream);
+  min-width: 240px;
+  max-width: 340px;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: auto;
+}
+
+.toast.show { opacity: 1; transform: translateX(0); }
+.toast-error { border-left-color: var(--urgent); }
+.toast-info  { border-left-color: var(--status-new); }
+
+.toast-icon {
+  font-size: 0.9rem;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.toast-error .toast-icon { color: var(--urgent); }
+.toast-info  .toast-icon { color: var(--status-new); }
+
+/* ============================================================
+   CONFIRM DIALOG
+   ============================================================ */
+.confirm-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(5,2,2,0.8);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-backdrop.open { display: flex; }
+
+.confirm-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 2rem 2.25rem;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+}
+
+.confirm-message {
+  font-size: 0.95rem;
+  color: var(--cream);
+  line-height: 1.6;
+  margin-bottom: 1.75rem;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.btn-danger {
+  display: inline-block;
+  padding: 0.65rem 1.6rem;
+  background: var(--urgent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-danger:hover { background: #a04040; }
+
+/* ============================================================
+   MOBILE SIDEBAR OVERLAY
+   ============================================================ */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  z-index: 49;
+  background: rgba(5,2,2,0.6);
+}
+.sidebar-overlay.show { display: block; }
+
+/* ============================================================
+   URGENCY ROW HIGHLIGHTS
+   ============================================================ */
+.orders-table tbody tr.row-urgent { background: rgba(192,80,80,0.07); }
+.orders-table tbody tr.row-urgent:hover { background: rgba(192,80,80,0.13); }
+.orders-table tbody tr.row-warning { background: rgba(184,122,48,0.07); }
+.orders-table tbody tr.row-warning:hover { background: rgba(184,122,48,0.13); }
+
+.urgency-pill {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+.urgency-today    { background: rgba(192,80,80,0.2); color: #e08080; }
+.urgency-tomorrow { background: rgba(192,80,80,0.15); color: #d09090; }
+.urgency-soon     { background: rgba(184,122,48,0.2); color: #d4a060; }
+
+/* ============================================================
+   SEARCH WRAP + CLEAR BUTTON
+   ============================================================ */
+.search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.search-wrap .search-input { padding-right: 2.2rem; }
+
+.search-clear {
+  position: absolute;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  color: var(--cream-dk);
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+  display: none;
+  transition: color 0.2s;
+}
+.search-clear:hover { color: var(--cream); }
+.search-clear.show { display: block; }
+
+/* ============================================================
+   BETTER EMPTY STATE
+   ============================================================ */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--cream-dk);
+}
+
+.empty-icon {
+  font-size: 2.5rem;
+  color: var(--gold-dk);
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  color: var(--cream-dk);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   RESPONSIVE UPDATES
+   ============================================================ */
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
 }

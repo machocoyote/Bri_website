@@ -86,6 +86,11 @@
             <div class="stat-label">Upcoming (7 days)</div>
             <div class="stat-value" id="stat-upcoming">0</div>
           </div>
+          <div class="stat-card warning">
+            <div class="stat-label">Balance Outstanding</div>
+            <div class="stat-value" id="stat-outstanding">$0</div>
+            <div class="stat-sub">Unpaid balances</div>
+          </div>
         </div>
 
         <div class="overview-cols">
@@ -106,7 +111,10 @@
       <!-- ORDERS VIEW -->
       <section class="view" id="view-orders">
         <div class="orders-toolbar">
-          <input type="text" class="search-input" id="searchInput" placeholder="Search by name, phone, email..." />
+          <div class="search-wrap">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search by name, phone, email..." />
+            <button class="search-clear" id="searchClear" title="Clear search">&times;</button>
+          </div>
           <div class="filter-tabs" id="filterTabs">
             <button class="filter-tab active" data-status="all">All</button>
             <button class="filter-tab" data-status="New">New</button>
@@ -134,7 +142,11 @@
             </thead>
             <tbody id="ordersBody"></tbody>
           </table>
-          <p class="empty-state" id="ordersEmpty" style="display:none">No orders found. Add your first order!</p>
+          <div class="empty-state" id="ordersEmpty" style="display:none">
+            <div class="empty-icon">&#10047;</div>
+            <h3>No orders yet</h3>
+            <p>When you add an order it will appear here. Start by tapping <strong>+ New Order</strong> above.</p>
+          </div>
         </div>
       </section>
 
@@ -321,6 +333,23 @@
             </div>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- MOBILE SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- CONFIRM DIALOG -->
+  <div class="confirm-backdrop" id="confirmBackdrop">
+    <div class="confirm-box">
+      <p class="confirm-message" id="confirmMessage"></p>
+      <div class="confirm-actions">
+        <button class="btn-outline" id="confirmNo">Cancel</button>
+        <button class="btn-danger" id="confirmYes">Delete</button>
       </div>
     </div>
   </div>
