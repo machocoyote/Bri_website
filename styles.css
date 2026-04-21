@@ -101,6 +101,118 @@ a { color: inherit; text-decoration: none; }
 .btn-full { width: 100%; text-align: center; }
 
 /* ============================================================
+   SEASONAL HOLIDAY BANNER
+   ============================================================ */
+.seasonal-banner {
+  position: fixed;
+  top: -70px;
+  left: 0; right: 0;
+  z-index: 110;
+  height: 54px;
+  background: linear-gradient(135deg, #5c1a28 0%, #7d2638 50%, #5c1a28 100%);
+  border-bottom: 1px solid rgba(201,149,106,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.seasonal-banner.show { top: 0; }
+
+/* When banner is visible, push nav down */
+.has-banner .nav { top: 54px; }
+
+.banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.banner-bloom {
+  color: var(--gold-lt);
+  font-size: 1rem;
+  flex-shrink: 0;
+  animation: gentlePulse 3s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.2); opacity: 0.8; }
+}
+
+.banner-text {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.banner-occasion {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.banner-tagline {
+  font-size: 0.75rem;
+  color: var(--cream-dk);
+  white-space: nowrap;
+}
+
+.banner-countdown {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-lt);
+  background: rgba(201,149,106,0.15);
+  padding: 0.25rem 0.75rem;
+  border: 1px solid rgba(201,149,106,0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.banner-cta {
+  display: inline-block;
+  padding: 0.3rem 1.1rem;
+  background: var(--gold);
+  color: var(--bg);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.banner-cta:hover { background: var(--gold-lt); }
+
+.banner-dismiss {
+  background: none;
+  border: none;
+  color: var(--cream-dk);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0 0 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+.banner-dismiss:hover { color: var(--cream); }
+
+@media (max-width: 600px) {
+  .banner-tagline { display: none; }
+  .banner-text { gap: 0; }
+  .seasonal-banner { padding: 0 4%; gap: 0.5rem; }
+  .banner-inner { gap: 0.6rem; }
+}
+
+/* ============================================================
    NAV
    ============================================================ */
 .nav {

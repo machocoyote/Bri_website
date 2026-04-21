@@ -69,6 +69,58 @@ form.addEventListener('submit', async e => {
   }
 });
 
+// ── Seasonal Holiday Banner ──
+const HOLIDAYS = [
+  {
+    name:       "Mother's Day",
+    tagline:    "Surprise Mom with a beautiful arrangement",
+    cta:        "Order for Mom",
+    windowDays: 45,
+    getDate(year) {
+      // 2nd Sunday in May
+      const d = new Date(year, 4, 1);
+      const firstSun = d.getDay() === 0 ? 1 : 8 - d.getDay();
+      return new Date(year, 4, firstSun + 7);
+    },
+  },
+  // Add future holidays here — same shape as above
+];
+
+(function initBanner() {
+  if (sessionStorage.getItem('bf_banner_dismissed')) return;
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const year  = today.getFullYear();
+
+  for (const h of HOLIDAYS) {
+    let date = h.getDate(year);
+    if (date < today) date = h.getDate(year + 1);
+
+    const days = Math.round((date - today) / 86400000);
+    if (days < 0 || days > h.windowDays) continue;
+
+    const countdownText = days === 0 ? 'Today!'
+                        : days === 1 ? 'Tomorrow'
+                        : `${days} days away`;
+
+    document.getElementById('bannerOccasion').textContent  = h.name;
+    document.getElementById('bannerTagline').textContent   = h.tagline;
+    document.getElementById('bannerCountdown').textContent = countdownText;
+    document.getElementById('bannerCta').textContent       = h.cta;
+
+    document.body.classList.add('has-banner');
+    setTimeout(() => document.getElementById('seasonalBanner').classList.add('show'), 800);
+    break;
+  }
+
+  document.getElementById('bannerDismiss').addEventListener('click', () => {
+    const banner = document.getElementById('seasonalBanner');
+    banner.classList.remove('show');
+    document.body.classList.remove('has-banner');
+    sessionStorage.setItem('bf_banner_dismissed', '1');
+  });
+})();
+
 // Smooth scroll for all anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', e => {
