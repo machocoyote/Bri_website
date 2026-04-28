@@ -42,16 +42,11 @@ const formError = document.getElementById('formError');
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
-  const formId = form.dataset.formspreeId;
-  if (!formId || formId === 'YOUR_FORM_ID') {
-    formError.textContent = 'Form not configured yet. Please contact us directly by email or phone.';
-    return;
-  }
   submitBtn.disabled = true;
   submitBtn.textContent = 'Sending...';
   formError.textContent = '';
   try {
-    const res = await fetch(`https://formspree.io/f/${formId}`, {
+    const res = await fetch(form.action, {
       method: 'POST',
       headers: { 'Accept': 'application/json' },
       body: new FormData(form),
