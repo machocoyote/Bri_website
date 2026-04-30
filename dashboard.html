@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Be Flourished — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">Be Flourished</div>
+      <p class="login-sub">Order Management</p>
+      <form id="loginForm">
+        <div class="login-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn-primary btn-full">Enter Dashboard</button>
+        <p class="login-error" id="loginError"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div class="app" id="app" style="display:none">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <span>Be Flourished</span>
+        <button class="sidebar-close" id="sidebarClose">&times;</button>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-view="overview">
+          <span class="nav-icon">&#9783;</span> Overview
+        </a>
+        <a href="#" class="nav-item" data-view="orders">
+          <span class="nav-icon">&#9741;</span> Orders
+        </a>
+        <a href="#" class="nav-item" data-view="calendar">
+          <span class="nav-icon">&#9776;</span> Calendar
+        </a>
+        <a href="#" class="nav-item" data-view="reviews">
+          <span class="nav-icon">&#9733;</span> Reviews
+        </a>
+        <a href="#" class="nav-item" data-view="settings">
+          <span class="nav-icon">&#9881;</span> Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="index.html" class="sidebar-back">&#8592; Back to Website</a>
+        <button class="sidebar-logout" id="logoutBtn">Log Out</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <button class="topbar-menu" id="menuBtn">&#9776;</button>
+        <div class="topbar-title" id="topbarTitle">Overview</div>
+        <button class="btn-primary topbar-add" id="topbarAddBtn">+ New Order</button>
+      </header>
+
+      <!-- OVERVIEW VIEW -->
+      <section class="view active" id="view-overview">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value" id="stat-total">0</div>
+          </div>
+          <div class="stat-card accent">
+            <div class="stat-label">Needs Attention</div>
+            <div class="stat-value" id="stat-pending">0</div>
+            <div class="stat-sub">New + Confirmed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">This Month Revenue</div>
+            <div class="stat-value" id="stat-revenue">$0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Upcoming (7 days)</div>
+            <div class="stat-value" id="stat-upcoming">0</div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-label">Balance Outstanding</div>
+            <div class="stat-value" id="stat-outstanding">$0</div>
+            <div class="stat-sub">Unpaid balances</div>
+          </div>
+        </div>
+
+        <div class="overview-cols">
+          <div class="overview-col">
+            <div class="section-head">
+              <h2>Recent Orders</h2>
+              <a href="#" class="view-all" data-view="orders">View all</a>
+            </div>
+            <div id="recentOrdersList" class="recent-list"></div>
+          </div>
+          <div class="overview-col">
+            <div class="section-head"><h2>Upcoming Events</h2></div>
+            <div id="upcomingList" class="upcoming-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORDERS VIEW -->
+      <section class="view" id="view-orders">
+        <div class="orders-toolbar">
+          <div class="search-wrap">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search by name, phone, email..." />
+            <button class="search-clear" id="searchClear" title="Clear search">&times;</button>
+          </div>
+          <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab active" data-status="all">All</button>
+            <button class="filter-tab" data-status="New">New</button>
+            <button class="filter-tab" data-status="Confirmed">Confirmed</button>
+            <button class="filter-tab" data-status="In Progress">In Progress</button>
+            <button class="filter-tab" data-status="Ready">Ready</button>
+            <button class="filter-tab" data-status="Delivered">Delivered</button>
+            <button class="filter-tab" data-status="Cancelled">Cancelled</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="orders-table" id="ordersTable">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Event Date</th>
+                <th>Source</th>
+                <th>Total</th>
+                <th>Deposit</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+          <div class="empty-state" id="ordersEmpty" style="display:none">
+            <div class="empty-icon">&#10047;</div>
+            <h3>No orders yet</h3>
+            <p>When you add an order it will appear here. Start by tapping <strong>+ New Order</strong> above.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CALENDAR VIEW -->
+      <section class="view" id="view-calendar">
+        <div class="calendar-nav">
+          <button class="cal-btn" id="calPrev">&#8592;</button>
+          <h2 class="cal-month" id="calMonth"></h2>
+          <button class="cal-btn" id="calNext">&#8594;</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="cal-legend">
+          <span class="leg New">New</span>
+          <span class="leg Confirmed">Confirmed</span>
+          <span class="leg In-Progress">In Progress</span>
+          <span class="leg Ready">Ready</span>
+          <span class="leg Delivered">Delivered</span>
+        </div>
+      </section>
+
+      <!-- REVIEWS VIEW -->
+      <section class="view" id="view-reviews">
+        <div class="reviews-toolbar">
+          <p class="reviews-sync-note" id="reviewsSyncNote"></p>
+          <div class="reviews-toolbar-actions">
+            <button class="btn-outline" id="fetchReviewsBtn">&#8635; Sync from JSONbin</button>
+            <button class="btn-primary" id="addReviewBtn">+ Add Review</button>
+          </div>
+        </div>
+        <div class="reviews-list" id="reviewsList"></div>
+        <div class="empty-state" id="reviewsEmpty" style="display:none">
+          <div class="empty-icon">&#9733;</div>
+          <h3>No reviews yet</h3>
+          <p>Read feedback emails from Formspree, then tap <strong>+ Add Review</strong> to manually enter and approve them for the website.</p>
+        </div>
+      </section>
+
+      <!-- SETTINGS VIEW -->
+      <section class="view" id="view-settings">
+        <div class="settings-wrap">
+          <div class="settings-card">
+            <h2>Change Password</h2>
+            <form id="passwordForm">
+              <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" id="currentPw" required />
+              </div>
+              <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="newPw" required minlength="6" />
+              </div>
+              <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" id="confirmPw" required minlength="6" />
+              </div>
+              <button type="submit" class="btn-primary">Update Password</button>
+              <p class="pw-msg" id="pwMsg"></p>
+            </form>
+          </div>
+
+          <div class="settings-card" id="jsonbinCard">
+            <h2>Reviews (JSONbin)</h2>
+            <p class="settings-desc">
+              Connect a free <strong>JSONbin.io</strong> account to publish approved reviews to your homepage.
+              Create an account, create a new bin with content <code style="font-size:0.82rem;color:var(--gold-lt);background:var(--bg3);padding:0.1rem 0.35rem">[]</code>,
+              set it to <strong>Public</strong>, then paste the Bin ID and Master Key below.
+            </p>
+            <div class="form-group">
+              <label>JSONbin Master Key</label>
+              <input type="password" id="jsonbinKey" placeholder="$2b$10$..." autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label>JSONbin Bin ID</label>
+              <input type="text" id="jsonbinBinId" placeholder="64abc123..." />
+            </div>
+            <div class="settings-actions">
+              <button class="btn-primary" id="saveJsonbinBtn">Save Settings</button>
+              <button class="btn-outline" id="testJsonbinBtn">Test Connection</button>
+            </div>
+            <p class="pw-msg" id="jsonbinMsg"></p>
+          </div>
+
+          <div class="settings-card">
+            <h2>Data Backup</h2>
+            <p class="settings-desc">Export your orders as a CSV file to back up your data or open in Excel / Google Sheets.</p>
+            <div class="settings-actions">
+              <button class="btn-primary" id="exportBtn">Export Orders (CSV)</button>
+              <label class="btn-outline import-label">
+                Import Backup (JSON)
+                <input type="file" id="importFile" accept=".json" style="display:none" />
+              </label>
+            </div>
+            <p class="settings-desc" style="margin-top:1rem;opacity:0.6">Orders are stored in your browser. Export regularly to avoid data loss.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ORDER MODAL -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" id="orderModal">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Order</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="orderForm">
+          <input type="hidden" id="orderId" />
+
+          <div class="modal-section-label">Customer Info</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Customer Name *</label>
+              <input type="text" id="customerName" required placeholder="Full name" />
+            </div>
+            <div class="form-group">
+              <label>Phone *</label>
+              <input type="tel" id="customerPhone" required placeholder="216-555-0000" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="customerEmail" placeholder="customer@email.com" />
+            </div>
+            <div class="form-group">
+              <label>Order Source *</label>
+              <select id="orderSource" required>
+                <option value="">Select source...</option>
+                <option>Website Form</option>
+                <option>Phone Call</option>
+                <option>Text Message</option>
+                <option>In-Person</option>
+                <option>Instagram</option>
+                <option>Facebook</option>
+                <option>Referral</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-section-label">Order Details</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Service *</label>
+              <select id="orderService" required>
+                <option value="">Select service...</option>
+                <option>Wedding Florals</option>
+                <option>Custom Bouquet</option>
+                <option>Event Florals</option>
+                <option>Sympathy &amp; Tributes</option>
+                <option>Dried &amp; Preserved</option>
+                <option>Delivery</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Event / Needed Date</label>
+              <input type="date" id="eventDate" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Color Palette</label>
+              <input type="text" id="colorPalette" placeholder="e.g. Blush, ivory, sage" />
+            </div>
+            <div class="form-group">
+              <label>Flower Preferences</label>
+              <input type="text" id="flowerPrefs" placeholder="e.g. Roses, peonies, no lilies" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Delivery Address</label>
+            <input type="text" id="deliveryAddress" placeholder="Street address (if delivering)" />
+          </div>
+
+          <div class="modal-section-label">Payment</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Total Price ($)</label>
+              <input type="number" id="totalPrice" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div class="form-group">
+              <label>Deposit Amount ($)</label>
+              <input type="number" id="depositAmount" min="0" step="0.01" placeholder="0.00" />
+            </div>
+          </div>
+          <div class="form-row checkrow">
+            <label class="check-label">
+              <input type="checkbox" id="depositPaid" />
+              <span>Deposit Received</span>
+            </label>
+            <label class="check-label">
+              <input type="checkbox" id="balancePaid" />
+              <span>Balance Paid in Full</span>
+            </label>
+          </div>
+
+          <div class="modal-section-label">Status &amp; Notes</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Order Status</label>
+              <select id="orderStatus">
+                <option>New</option>
+                <option>Confirmed</option>
+                <option>In Progress</option>
+                <option>Ready</option>
+                <option>Delivered</option>
+                <option>Cancelled</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea id="orderNotes" rows="3" placeholder="Special instructions, customer preferences, internal notes..."></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-outline" id="deleteOrderBtn" style="display:none;border-color:#c06060;color:#c06060">Delete Order</button>
+            <div class="modal-footer-right">
+              <button type="button" class="btn-outline" id="cancelModalBtn">Cancel</button>
+              <button type="submit" class="btn-primary" id="saveOrderBtn">Save Order</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVIEW MODAL -->
+  <div class="modal-backdrop" id="reviewModalBackdrop">
+    <div class="modal" id="reviewModal">
+      <div class="modal-header">
+        <h2 id="reviewModalTitle">Add Review</h2>
+        <button class="modal-close" id="reviewModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="reviewForm">
+          <input type="hidden" id="reviewId" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Customer Name</label>
+              <input type="text" id="rvCustomerName" placeholder="Name from feedback email" />
+            </div>
+            <div class="form-group">
+              <label>Rating *</label>
+              <select id="rvRating" required>
+                <option value="">Select...</option>
+                <option value="5">5 Stars &#9733;&#9733;&#9733;&#9733;&#9733;</option>
+                <option value="4">4 Stars &#9733;&#9733;&#9733;&#9733;</option>
+                <option value="3">3 Stars &#9733;&#9733;&#9733;</option>
+                <option value="2">2 Stars &#9733;&#9733;</option>
+                <option value="1">1 Star &#9733;</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Service</label>
+              <select id="rvService">
+                <option value="">Select...</option>
+                <option>Wedding Florals</option>
+                <option>Custom Bouquet</option>
+                <option>Event Florals</option>
+                <option>Sympathy &amp; Tributes</option>
+                <option>Delivery</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="rvDate" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Review Text *</label>
+            <textarea id="rvText" rows="4" placeholder="Paste review text from the feedback email..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Photo URL (optional)</label>
+            <input type="url" id="rvPhotoUrl" placeholder="https://... (paste a link to the customer's photo if they shared one)" />
+            <p style="font-size:0.7rem;color:var(--cream-dk);margin-top:0.3rem;opacity:0.65">Download the photo from Formspree, upload to Imgur or Google Photos, then paste the link here.</p>
+          </div>
+          <div class="form-row checkrow">
+            <label class="check-label">
+              <input type="checkbox" id="rvAnonymous" />
+              <span>Keep Anonymous</span>
+            </label>
+            <label class="check-label">
+              <input type="checkbox" id="rvApproved" />
+              <span>Approve &amp; Publish to Website</span>
+            </label>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-outline" id="deleteReviewBtn"
+                    style="display:none;border-color:#c06060;color:#c06060">Delete</button>
+            <div class="modal-footer-right">
+              <button type="button" class="btn-outline" id="cancelReviewBtn">Cancel</button>
+              <button type="submit" class="btn-primary" id="saveReviewBtn">Save Review</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMAIL DRAFT MODAL -->
+  <div class="email-modal-backdrop" id="emailModalBackdrop">
+    <div class="email-modal">
+      <div class="modal-header">
+        <h2 id="emailModalTitle">Notify Customer</h2>
+        <button class="modal-close" id="emailModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="email-modal-intro" id="emailModalIntro"></p>
+        <div class="email-preview">
+          <div class="email-preview-row">
+            <span class="email-preview-label">To</span>
+            <span class="email-preview-val" id="emailTo"></span>
+          </div>
+          <div class="email-preview-row">
+            <span class="email-preview-label">Subject</span>
+            <span class="email-preview-val" id="emailSubject"></span>
+          </div>
+          <div class="email-preview-body" id="emailBody"></div>
+        </div>
+
+        <!-- Thank-you section — shown only for Delivered status -->
+        <div id="emailThankYouSection" style="display:none">
+          <hr style="border:none;border-top:1px solid var(--border);margin:1.5rem 0" />
+          <p class="email-modal-intro">You can also send a separate thank-you with a feedback link:</p>
+          <div class="email-preview">
+            <div class="email-preview-row">
+              <span class="email-preview-label">Subject</span>
+              <span class="email-preview-val">Thank You from Be Flourished Florist &#127800;</span>
+            </div>
+            <div class="email-preview-body" id="emailThankYouBody"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="emailSkipBtn">Skip — Don&rsquo;t Send</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-outline" id="emailThankYouBtn" style="display:none">Open Thank-You Email</button>
+          <button type="button" class="btn-primary" id="emailOpenBtn">Open in Email App</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- MOBILE SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- CONFIRM DIALOG -->
+  <div class="confirm-backdrop" id="confirmBackdrop">
+    <div class="confirm-box">
+      <p class="confirm-message" id="confirmMessage"></p>
+      <div class="confirm-actions">
+        <button class="btn-outline" id="confirmNo">Cancel</button>
+        <button class="btn-danger" id="confirmYes">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDER DETAIL PANEL -->
+  <div class="detail-backdrop" id="detailBackdrop">
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-header">
+        <h2 id="detailName"></h2>
+        <button class="modal-close" id="detailClose">&times;</button>
+      </div>
+      <div class="detail-body" id="detailBody"></div>
+      <div class="detail-footer">
+        <button class="btn-outline" id="detailEditBtn">Edit Order</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

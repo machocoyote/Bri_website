@@ -1,0 +1,357 @@
+/* ============================================================
+   BE FLOURISHED — Customer Feedback Page
+   Self-contained; does not import styles.css
+   ============================================================ */
+
+:root {
+  --bg:        #0f0808;
+  --bg2:       #1a0f0f;
+  --bg3:       #221414;
+  --gold:      #c9956a;
+  --gold-lt:   #e0b48a;
+  --gold-dk:   #9e6a42;
+  --cream:     #f5ede4;
+  --cream-dk:  #d4c5b8;
+  --border:    rgba(201,149,106,0.25);
+  --radius:    4px;
+  --transition: 0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Lato', sans-serif;
+  background: var(--bg);
+  color: var(--cream);
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* ── Page shell ── */
+.fb-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.fb-header {
+  text-align: center;
+  padding: 2.5rem 5%;
+  border-bottom: 1px solid var(--border);
+}
+
+.fb-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--gold-lt);
+  letter-spacing: 0.04em;
+  display: inline-block;
+  transition: color var(--transition);
+}
+.fb-logo:hover { color: var(--cream); }
+
+.fb-logo-sub {
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--cream-dk);
+  margin-top: 0.3rem;
+  opacity: 0.7;
+}
+
+/* ── Main content ── */
+.fb-main {
+  flex: 1;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 4rem 5% 5rem;
+}
+
+.fb-eyebrow {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.75rem;
+}
+
+.fb-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 600;
+  color: var(--cream);
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.fb-title em {
+  font-style: italic;
+  color: var(--gold-lt);
+}
+
+.fb-intro {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  color: var(--cream-dk);
+  line-height: 1.8;
+  margin-bottom: 2.5rem;
+}
+
+/* ── Form groups ── */
+.fb-group {
+  margin-bottom: 1.5rem;
+}
+
+.fb-label {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.fb-form input[type="text"],
+.fb-form select,
+.fb-form textarea {
+  display: block;
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--cream);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.92rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color var(--transition);
+  appearance: none;
+  border-radius: 0;
+}
+
+.fb-form input[type="text"]:focus,
+.fb-form select:focus,
+.fb-form textarea:focus {
+  border-color: var(--gold);
+}
+
+.fb-form input::placeholder,
+.fb-form textarea::placeholder {
+  color: var(--cream-dk);
+  opacity: 0.45;
+}
+
+.fb-form select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23c9956a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+  background-color: var(--bg2);
+}
+
+.fb-form select option { background: var(--bg2); }
+
+.fb-form textarea { resize: vertical; }
+
+/* ── Star rating (pure CSS hover/fill) ── */
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 0.2rem;
+  width: fit-content;
+  margin-bottom: 0.1rem;
+}
+
+.star-rating input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.star-rating label {
+  font-size: 2.2rem;
+  color: var(--cream-dk);
+  opacity: 0.3;
+  cursor: pointer;
+  transition: color 0.15s, opacity 0.15s;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Hover fill: hovered label and all siblings to its left (rendered right-to-left) */
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: var(--gold-lt);
+  opacity: 1;
+}
+
+/* Checked: fill checked star and all subsequent siblings (rendered to the left visually) */
+.star-rating input:checked ~ label {
+  color: var(--gold);
+  opacity: 1;
+}
+
+.fb-star-hint {
+  font-size: 0.75rem;
+  color: var(--cream-dk);
+  margin-top: 0.4rem;
+  min-height: 1.1em;
+  opacity: 0.7;
+}
+
+/* ── Anonymous checkbox ── */
+.fb-check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+  color: var(--cream-dk);
+  cursor: pointer;
+  padding: 0.4rem 0;
+  line-height: 1.5;
+}
+
+.fb-check-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--gold);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── File input ── */
+.fb-file-input {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--cream-dk);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.fb-file-input:focus { outline: none; border-color: var(--gold); }
+
+.fb-file-input::file-selector-button {
+  background: var(--gold-dk);
+  color: var(--bg);
+  border: none;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-right: 1rem;
+  font-family: 'Lato', sans-serif;
+}
+
+.fb-hint {
+  font-size: 0.72rem;
+  color: var(--cream-dk);
+  opacity: 0.55;
+  margin-top: 0.4rem;
+}
+
+/* ── Submit button ── */
+.fb-submit {
+  display: block;
+  width: 100%;
+  padding: 0.95rem 2rem;
+  background: var(--gold);
+  color: var(--bg);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  margin-top: 0.5rem;
+}
+
+.fb-submit:hover { background: var(--gold-lt); transform: translateY(-2px); }
+.fb-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── Error message ── */
+.fb-error {
+  color: #e07070;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+  min-height: 1.2em;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── Success state ── */
+.fb-success {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+.fb-success-icon {
+  font-size: 3rem;
+  color: var(--gold);
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.fb-success h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  color: var(--cream);
+  margin-bottom: 0.85rem;
+}
+
+.fb-success p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem;
+  color: var(--cream-dk);
+  line-height: 1.8;
+  margin-bottom: 2rem;
+}
+
+.fb-back-btn {
+  display: inline-block;
+  padding: 0.85rem 2.2rem;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: background var(--transition), color var(--transition);
+}
+.fb-back-btn:hover { background: var(--gold); color: var(--bg); }
+
+/* ── Footer ── */
+.fb-footer {
+  text-align: center;
+  padding: 2rem 5%;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--cream-dk);
+  opacity: 0.5;
+}
+
+.fb-footer a:hover { opacity: 1; color: var(--gold-lt); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 480px) {
+  .fb-main { padding: 3rem 6% 4rem; }
+  .star-rating label { font-size: 1.85rem; }
+  .fb-title { font-size: 1.85rem; }
+}

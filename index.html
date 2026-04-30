@@ -19,6 +19,7 @@
       <li><a href="#about">About</a></li>
       <li><a href="#services">Services</a></li>
       <li><a href="#gallery">Gallery</a></li>
+      <li><a href="#reviews">Reviews</a></li>
       <li><a href="#contact">Contact</a></li>
     </ul>
     <a href="#contact" class="nav-cta">Book Now</a>
@@ -35,6 +36,7 @@
       <li><a href="#about" class="mobile-link">About</a></li>
       <li><a href="#services" class="mobile-link">Services</a></li>
       <li><a href="#gallery" class="mobile-link">Gallery</a></li>
+      <li><a href="#reviews" class="mobile-link">Reviews</a></li>
       <li><a href="#contact" class="mobile-link">Contact</a></li>
     </ul>
     <a href="#contact" class="btn-primary mobile-link">Book Now</a>
@@ -219,29 +221,14 @@
     <p class="gallery-cta-text">Follow us on social media for more of our latest work</p>
   </section>
 
-  <!-- Testimonials -->
-  <section class="testimonials">
-    <div class="testimonials-header">
-      <p class="section-eyebrow">Kind Words</p>
-      <h2 class="section-title">Client <em>Love</em></h2>
+  <!-- Reviews Section — hidden until JSONbin returns ≥1 review -->
+  <section class="reviews-section" id="reviews" style="display:none">
+    <div class="reviews-section-header">
+      <p class="section-eyebrow">From Our Customers</p>
+      <h2 class="section-title">What Our Customers <em>Say</em></h2>
     </div>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        <p>"The bouquet she made for my wedding was absolutely breathtaking. Everyone kept asking where they came from. Be Flourished will always be my go-to florist!"</p>
-        <span class="testimonial-author">— Jasmine T., Bride</span>
-      </div>
-      <div class="testimonial-card featured-testimonial">
-        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        <p>"I ordered a birthday arrangement last minute and she delivered something so stunning it brought my mom to tears. The attention to detail and care is unmatched."</p>
-        <span class="testimonial-author">— Keisha M., Cleveland</span>
-      </div>
-      <div class="testimonial-card">
-        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        <p>"She decorated our entire baby shower and it was like walking into a fairy tale. Absolutely magical. I can't recommend Be Flourished enough!"</p>
-        <span class="testimonial-author">— Tiffany R., Client</span>
-      </div>
-    </div>
+    <div class="reviews-loading" id="reviewsLoading">Loading reviews...</div>
+    <div class="reviews-pub-grid" id="reviewsGrid"></div>
   </section>
 
   <!-- Contact Section -->
@@ -346,6 +333,7 @@
           <li><a href="#about">About</a></li>
           <li><a href="#services">Services</a></li>
           <li><a href="#gallery">Gallery</a></li>
+          <li><a href="#reviews">Reviews</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </div>
