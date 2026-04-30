@@ -237,7 +237,7 @@ a { color: inherit; text-decoration: none; }
   font-family: 'Playfair Display', serif;
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--gold-lt);
+  color: var(--gold);
   letter-spacing: 0.04em;
 }
 
@@ -678,8 +678,8 @@ a { color: inherit; text-decoration: none; }
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: 260px 260px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 420px;
   gap: 8px;
 }
 
@@ -724,7 +724,10 @@ a { color: inherit; text-decoration: none; }
 }
 
 .gallery-footer {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
   margin-top: 2.5rem;
 }
 
@@ -733,7 +736,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 1.1rem;
   color: var(--cream-dk);
   font-style: italic;
-  margin: 0 0 1.25rem;
+  margin: 0;
 }
 
 .gallery-social {
@@ -937,7 +940,7 @@ a { color: inherit; text-decoration: none; }
   font-family: 'Playfair Display', serif;
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--gold-lt);
+  color: var(--gold);
   margin-bottom: 0.5rem;
 }
 
