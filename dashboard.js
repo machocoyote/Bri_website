@@ -2,22 +2,28 @@
 //  BE FLOURISHED — Order Management Dashboard
 // ============================================================
 
-const DEFAULT_PASSWORD = 'flourish2026';
-const STORAGE_KEY = 'bf_orders';
-const PW_KEY      = 'bf_pw';
+const DEFAULT_PASSWORD    = 'flourish2026';
+const STORAGE_KEY         = 'bf_orders';
+const PW_KEY              = 'bf_pw';
+const REVIEWS_KEY         = 'bf_reviews';
+const JSONBIN_KEY_STORAGE = 'bf_jsonbin_key';
+const JSONBIN_BIN_STORAGE = 'bf_jsonbin_bin';
 
-let orders      = [];
-let calYear     = new Date().getFullYear();
-let calMonth    = new Date().getMonth();
-let activeView  = 'overview';
+let orders       = [];
+let reviews      = [];
+let calYear      = new Date().getFullYear();
+let calMonth     = new Date().getMonth();
+let activeView   = 'overview';
 let filterStatus = 'all';
 let searchQuery  = '';
 let editingId    = null;
 
 // ── Init ──
 function init() {
-  orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  orders  = JSON.parse(localStorage.getItem(STORAGE_KEY)  || '[]');
+  reviews = JSON.parse(localStorage.getItem(REVIEWS_KEY)  || '[]');
   if (!localStorage.getItem(PW_KEY)) localStorage.setItem(PW_KEY, DEFAULT_PASSWORD);
+  initJsonbinSettings();
   if (sessionStorage.getItem('bf_auth') === '1') showApp();
 }
 
@@ -113,11 +119,12 @@ function switchView(view) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${view}`).classList.add('active');
   document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
-  const titles = { overview: 'Overview', orders: 'Orders', calendar: 'Calendar', settings: 'Settings' };
+  const titles = { overview: 'Overview', orders: 'Orders', calendar: 'Calendar', reviews: 'Reviews', settings: 'Settings' };
   document.getElementById('topbarTitle').textContent = titles[view] || '';
   if (view === 'overview') renderOverview();
   if (view === 'orders')   { updateTabCounts(); renderOrders(); }
   if (view === 'calendar') renderCalendar();
+  if (view === 'reviews')  renderReviews();
 }
 
 // Mobile sidebar
@@ -134,11 +141,13 @@ function closeSidebar() { sidebar.classList.remove('open'); sidebarOverlay.class
 // Escape key closes any open panel/modal
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (document.getElementById('modalBackdrop').classList.contains('open')) { closeModal(); return; }
-  if (document.getElementById('detailBackdrop').classList.contains('open')) { closeDetail(); return; }
   if (document.getElementById('confirmBackdrop').classList.contains('open')) {
     document.getElementById('confirmBackdrop').classList.remove('open'); return;
   }
+  if (document.getElementById('emailModalBackdrop').classList.contains('open')) { closeEmailModal(); return; }
+  if (document.getElementById('modalBackdrop').classList.contains('open')) { closeModal(); return; }
+  if (document.getElementById('reviewModalBackdrop').classList.contains('open')) { closeReviewModal(); return; }
+  if (document.getElementById('detailBackdrop').classList.contains('open')) { closeDetail(); return; }
   closeSidebar();
 });
 
@@ -622,13 +631,20 @@ function openDetail(id) {
       <div class="detail-value">${new Date(o.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
     </div>`;
 
-  document.getElementById('detailStatusSelect').addEventListener('change', e => {
+  document.getElementById('detailStatusSelect').addEventListener('change', async e => {
+    const newStatus = e.target.value;
     const idx = orders.findIndex(x => x.id === id);
-    if (idx > -1) {
-      orders[idx].status = e.target.value;
-      saveOrders();
-      showToast(`Status updated to "${e.target.value}".`);
-      refreshCurrentView();
+    if (idx === -1) return;
+    orders[idx].status = newStatus;
+    saveOrders();
+    showToast(`Status updated to "${newStatus}".`);
+    refreshCurrentView();
+    if (CUSTOMER_FACING_STATUSES[newStatus]) {
+      if (orders[idx].customerEmail) {
+        await showEmailModal(orders[idx], newStatus);
+      } else {
+        showToast('No customer email on file — skipping email prompt.', 'info');
+      }
     }
   });
 
@@ -704,6 +720,394 @@ document.getElementById('importFile').addEventListener('change', async e => {
   reader.readAsText(file);
   e.target.value = '';
 });
+
+// ============================================================
+//  JSONBIN SETTINGS
+// ============================================================
+function initJsonbinSettings() {
+  const keyInput = document.getElementById('jsonbinKey');
+  const binInput = document.getElementById('jsonbinBinId');
+  if (!keyInput || !binInput) return;
+  keyInput.value = localStorage.getItem(JSONBIN_KEY_STORAGE) || '';
+  binInput.value = localStorage.getItem(JSONBIN_BIN_STORAGE) || '';
+}
+
+document.getElementById('saveJsonbinBtn').addEventListener('click', () => {
+  const key = document.getElementById('jsonbinKey').value.trim();
+  const bin = document.getElementById('jsonbinBinId').value.trim();
+  localStorage.setItem(JSONBIN_KEY_STORAGE, key);
+  localStorage.setItem(JSONBIN_BIN_STORAGE, bin);
+  const msg = document.getElementById('jsonbinMsg');
+  msg.textContent = 'Settings saved.';
+  msg.className = 'pw-msg success';
+  showToast('JSONbin settings saved.');
+});
+
+document.getElementById('testJsonbinBtn').addEventListener('click', async () => {
+  const key = localStorage.getItem(JSONBIN_KEY_STORAGE);
+  const bin = localStorage.getItem(JSONBIN_BIN_STORAGE);
+  const msg = document.getElementById('jsonbinMsg');
+  if (!key || !bin) {
+    msg.textContent = 'Enter and save the key and bin ID first.';
+    msg.className = 'pw-msg error';
+    return;
+  }
+  msg.textContent = 'Testing...';
+  msg.className = 'pw-msg';
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`, {
+      headers: { 'X-Master-Key': key }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const count = Array.isArray(data.record) ? data.record.length : '?';
+      msg.textContent = `Connected! ${count} approved review(s) in bin.`;
+      msg.className = 'pw-msg success';
+    } else {
+      msg.textContent = `Error ${res.status} — check your key and bin ID.`;
+      msg.className = 'pw-msg error';
+    }
+  } catch {
+    msg.textContent = 'Network error. Check your connection.';
+    msg.className = 'pw-msg error';
+  }
+});
+
+// ============================================================
+//  REVIEWS MANAGEMENT
+// ============================================================
+function saveReviews() { localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews)); }
+
+function renderReviews() {
+  const list  = document.getElementById('reviewsList');
+  const empty = document.getElementById('reviewsEmpty');
+  const note  = document.getElementById('reviewsSyncNote');
+
+  if (reviews.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    note.textContent = '';
+    return;
+  }
+  empty.style.display = 'none';
+  const approved = reviews.filter(r => r.approved).length;
+  note.textContent = `${reviews.length} review(s) total · ${approved} published to website`;
+
+  list.innerHTML = [...reviews]
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+    .map(r => `
+      <div class="review-card ${r.approved ? 'approved' : 'pending'}" data-id="${r.id}">
+        <div class="rv-card-header">
+          <span class="rv-card-name">${r.anonymous ? 'Anonymous' : (r.customerName || 'Unknown')}</span>
+          <span class="rv-card-stars">${'★'.repeat(r.rating || 0)}${'☆'.repeat(5 - (r.rating || 0))}</span>
+        </div>
+        <div class="rv-card-meta">${r.service || 'General'} · ${r.date || '—'}</div>
+        <div class="rv-card-text">${r.text || ''}</div>
+        <div class="rv-card-status">
+          ${r.approved
+            ? '<span class="rv-verified-badge">&#10003; Published</span>'
+            : '<span class="rv-pending-badge">Pending Approval</span>'}
+        </div>
+        <div class="rv-card-actions">
+          <button class="rv-publish-btn ${r.approved ? 'unpublish' : ''}" data-id="${r.id}">
+            ${r.approved ? 'Unpublish' : 'Approve &amp; Publish'}
+          </button>
+          <button class="rv-edit-btn" data-id="${r.id}">Edit</button>
+        </div>
+      </div>`).join('');
+
+  list.querySelectorAll('.rv-publish-btn').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); toggleApproveReview(btn.dataset.id); });
+  });
+  list.querySelectorAll('.rv-edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); openReviewModal(btn.dataset.id); });
+  });
+}
+
+async function toggleApproveReview(id) {
+  const idx = reviews.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  reviews[idx].approved = !reviews[idx].approved;
+  saveReviews();
+  renderReviews();
+  const action = reviews[idx].approved ? 'published' : 'unpublished';
+  showToast(`Review ${action}.`, 'success');
+  await pushReviewsToJsonbin();
+}
+
+async function pushReviewsToJsonbin() {
+  const key = localStorage.getItem(JSONBIN_KEY_STORAGE);
+  const bin = localStorage.getItem(JSONBIN_BIN_STORAGE);
+  if (!key || !bin) {
+    showToast('JSONbin not configured. Review saved locally only.', 'info');
+    return;
+  }
+  const approved = reviews
+    .filter(r => r.approved)
+    .map(({ id, customerName, anonymous, rating, text, service, date, photoUrl }) => ({
+      id, customerName, anonymous, rating, text, service, date,
+      photoUrl: photoUrl || null,
+      verified: true
+    }));
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${bin}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': key },
+      body: JSON.stringify(approved)
+    });
+    if (res.ok) {
+      showToast(`${approved.length} review(s) synced to website.`, 'success');
+    } else {
+      showToast(`JSONbin sync failed (${res.status}). Saved locally.`, 'error');
+    }
+  } catch {
+    showToast('Network error. Review saved locally only.', 'error');
+  }
+}
+
+async function fetchReviewsFromJsonbin() {
+  const key = localStorage.getItem(JSONBIN_KEY_STORAGE);
+  const bin = localStorage.getItem(JSONBIN_BIN_STORAGE);
+  if (!key || !bin) { showToast('Configure JSONbin settings first.', 'info'); return; }
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`, {
+      headers: { 'X-Master-Key': key }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const count = Array.isArray(data.record) ? data.record.length : 0;
+      showToast(`JSONbin has ${count} approved review(s) live on site.`, 'info');
+    } else {
+      showToast(`JSONbin fetch failed (${res.status}).`, 'error');
+    }
+  } catch {
+    showToast('Network error during sync.', 'error');
+  }
+}
+
+// ── Review Modal ──
+const reviewModalBackdrop = document.getElementById('reviewModalBackdrop');
+const reviewForm = document.getElementById('reviewForm');
+
+document.getElementById('addReviewBtn').addEventListener('click', () => openReviewModal(null));
+document.getElementById('fetchReviewsBtn').addEventListener('click', fetchReviewsFromJsonbin);
+document.getElementById('reviewModalClose').addEventListener('click', closeReviewModal);
+document.getElementById('cancelReviewBtn').addEventListener('click', closeReviewModal);
+reviewModalBackdrop.addEventListener('click', e => { if (e.target === reviewModalBackdrop) closeReviewModal(); });
+
+function openReviewModal(id) {
+  document.getElementById('reviewModalTitle').textContent = id ? 'Edit Review' : 'Add Review';
+  document.getElementById('deleteReviewBtn').style.display = id ? 'inline-block' : 'none';
+
+  if (id) {
+    const r = reviews.find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('reviewId').value       = r.id;
+    document.getElementById('rvCustomerName').value = r.customerName || '';
+    document.getElementById('rvRating').value       = r.rating || '';
+    document.getElementById('rvService').value      = r.service || '';
+    document.getElementById('rvDate').value         = r.date || '';
+    document.getElementById('rvText').value         = r.text || '';
+    document.getElementById('rvPhotoUrl').value     = r.photoUrl || '';
+    document.getElementById('rvAnonymous').checked  = !!r.anonymous;
+    document.getElementById('rvApproved').checked   = !!r.approved;
+  } else {
+    reviewForm.reset();
+    document.getElementById('reviewId').value = '';
+    document.getElementById('rvDate').value   = new Date().toISOString().slice(0, 10);
+  }
+
+  reviewModalBackdrop.classList.add('open');
+  setTimeout(() => document.getElementById('rvCustomerName').focus(), 100);
+}
+
+function closeReviewModal() { reviewModalBackdrop.classList.remove('open'); }
+
+reviewForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const existingId   = document.getElementById('reviewId').value;
+  const isNew        = !existingId;
+  const id           = existingId || genId();
+  const wasApproved  = !isNew && (reviews.find(x => x.id === id)?.approved || false);
+  const nowApproved  = document.getElementById('rvApproved').checked;
+
+  const review = {
+    id,
+    customerName: document.getElementById('rvCustomerName').value.trim(),
+    anonymous:    document.getElementById('rvAnonymous').checked,
+    rating:       parseInt(document.getElementById('rvRating').value, 10) || 0,
+    service:      document.getElementById('rvService').value,
+    date:         document.getElementById('rvDate').value,
+    text:         document.getElementById('rvText').value.trim(),
+    photoUrl:     document.getElementById('rvPhotoUrl').value.trim() || null,
+    approved:     nowApproved,
+  };
+
+  if (isNew) {
+    reviews.unshift(review);
+    showToast('Review added.');
+  } else {
+    const idx = reviews.findIndex(x => x.id === id);
+    if (idx > -1) reviews[idx] = review;
+    showToast('Review updated.');
+  }
+
+  saveReviews();
+  closeReviewModal();
+  renderReviews();
+
+  if (wasApproved !== nowApproved || (isNew && nowApproved)) {
+    await pushReviewsToJsonbin();
+  }
+});
+
+document.getElementById('deleteReviewBtn').addEventListener('click', async () => {
+  const id = document.getElementById('reviewId').value;
+  if (!id) return;
+  const r = reviews.find(x => x.id === id);
+  const confirmed = await showConfirm(
+    `Delete review from ${r?.customerName || 'this customer'}?`, 'Delete'
+  );
+  if (!confirmed) return;
+  const wasApproved = r?.approved;
+  reviews = reviews.filter(x => x.id !== id);
+  saveReviews();
+  closeReviewModal();
+  renderReviews();
+  showToast('Review deleted.', 'info');
+  if (wasApproved) await pushReviewsToJsonbin();
+});
+
+// ============================================================
+//  EMAIL DRAFT MODAL
+// ============================================================
+const CUSTOMER_FACING_STATUSES = {
+  'Confirmed': {
+    subject: name => `Your order has been confirmed! — Be Flourished`,
+    body: o =>
+`Hi ${o.customerName},
+
+Great news — your order has been confirmed! We're so excited to create something beautiful for you.
+
+Order Details:
+  Service: ${o.service || '—'}
+  Event Date: ${o.eventDate ? fmt(o.eventDate) : '—'}
+
+If you have any questions or need to make changes, please don't hesitate to reach out.
+
+With love,
+Be Flourished Florist
+beflourishedflorals@gmail.com | 216-356-9761`
+  },
+  'Ready': {
+    subject: name => `Your order is ready! — Be Flourished`,
+    body: o =>
+`Hi ${o.customerName},
+
+Your order is ready! 🌸${o.deliveryAddress
+  ? `\n\nWe'll be delivering to: ${o.deliveryAddress}`
+  : '\n\nPlease coordinate pickup at your convenience.'}
+
+If you have any questions, reply to this email or call/text us at 216-356-9761.
+
+With love,
+Be Flourished Florist`
+  },
+  'Delivered': {
+    subject: name => `Your order has been delivered — Be Flourished`,
+    body: o =>
+`Hi ${o.customerName},
+
+Your order has been delivered — we hope you love it! It was such a joy creating something special for you.
+
+Thank you for choosing Be Flourished. We'd love to work with you again.
+
+With love,
+Be Flourished Florist
+beflourishedflorals@gmail.com | 216-356-9761`
+  }
+};
+
+function buildFeedbackLink(o) {
+  const base = 'https://beflourishedflorals.com/feedback.html';
+  const p = new URLSearchParams({ ref: o.id });
+  if (o.service) p.set('service', o.service);
+  return `${base}?${p.toString()}`;
+}
+
+function buildThankYouBody(o) {
+  return `Hi ${o.customerName},
+
+Thank you so much for choosing Be Flourished! We're truly grateful for the opportunity to be part of your special moments.
+
+If you have a moment, we'd love to hear about your experience. Your feedback means the world to us:
+
+${buildFeedbackLink(o)}
+
+With gratitude,
+Be Flourished Florist 🌸
+beflourishedflorals@gmail.com | 216-356-9761`;
+}
+
+function buildMailto(to, subject, body) {
+  const MAX = 1800;
+  const safe = body.length > MAX ? body.slice(0, MAX) + '...' : body;
+  return `mailto:${encodeURIComponent(to || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(safe)}`;
+}
+
+const emailModalBackdrop = document.getElementById('emailModalBackdrop');
+let _emailResolve = null;
+
+document.getElementById('emailModalClose').addEventListener('click', closeEmailModal);
+document.getElementById('emailSkipBtn').addEventListener('click', closeEmailModal);
+emailModalBackdrop.addEventListener('click', e => { if (e.target === emailModalBackdrop) closeEmailModal(); });
+
+function closeEmailModal() {
+  emailModalBackdrop.classList.remove('open');
+  if (_emailResolve) { _emailResolve(); _emailResolve = null; }
+}
+
+function showEmailModal(order, newStatus) {
+  return new Promise(resolve => {
+    _emailResolve = resolve;
+
+    const tpl     = CUSTOMER_FACING_STATUSES[newStatus];
+    const subject = tpl.subject(order.customerName);
+    const body    = tpl.body(order);
+
+    document.getElementById('emailModalTitle').textContent  = `Notify Customer — ${newStatus}`;
+    document.getElementById('emailModalIntro').textContent  =
+      `Status changed to "${newStatus}". Click below to open a pre-filled email to ${order.customerName}.`;
+    document.getElementById('emailTo').textContent      = order.customerEmail || '(no email on file)';
+    document.getElementById('emailSubject').textContent = subject;
+    document.getElementById('emailBody').textContent    = body;
+
+    document.getElementById('emailOpenBtn').onclick = () => {
+      if (!order.customerEmail) { showToast('No customer email on file.', 'error'); return; }
+      window.location.href = buildMailto(order.customerEmail, subject, body);
+    };
+
+    const tySection = document.getElementById('emailThankYouSection');
+    const tyBtn     = document.getElementById('emailThankYouBtn');
+
+    if (newStatus === 'Delivered') {
+      const tyBody    = buildThankYouBody(order);
+      const tySubject = `Thank You from Be Flourished Florist 🌸`;
+      document.getElementById('emailThankYouBody').textContent = tyBody;
+      tySection.style.display = 'block';
+      tyBtn.style.display = 'inline-block';
+      tyBtn.onclick = () => {
+        if (!order.customerEmail) { showToast('No email on file.', 'error'); return; }
+        window.location.href = buildMailto(order.customerEmail, tySubject, tyBody);
+      };
+    } else {
+      tySection.style.display = 'none';
+      tyBtn.style.display = 'none';
+    }
+
+    emailModalBackdrop.classList.add('open');
+  });
+}
 
 // ── Start ──
 init();

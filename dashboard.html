@@ -46,6 +46,9 @@
         <a href="#" class="nav-item" data-view="calendar">
           <span class="nav-icon">&#9776;</span> Calendar
         </a>
+        <a href="#" class="nav-item" data-view="reviews">
+          <span class="nav-icon">&#9733;</span> Reviews
+        </a>
         <a href="#" class="nav-item" data-view="settings">
           <span class="nav-icon">&#9881;</span> Settings
         </a>
@@ -167,6 +170,23 @@
         </div>
       </section>
 
+      <!-- REVIEWS VIEW -->
+      <section class="view" id="view-reviews">
+        <div class="reviews-toolbar">
+          <p class="reviews-sync-note" id="reviewsSyncNote"></p>
+          <div class="reviews-toolbar-actions">
+            <button class="btn-outline" id="fetchReviewsBtn">&#8635; Sync from JSONbin</button>
+            <button class="btn-primary" id="addReviewBtn">+ Add Review</button>
+          </div>
+        </div>
+        <div class="reviews-list" id="reviewsList"></div>
+        <div class="empty-state" id="reviewsEmpty" style="display:none">
+          <div class="empty-icon">&#9733;</div>
+          <h3>No reviews yet</h3>
+          <p>Read feedback emails from Formspree, then tap <strong>+ Add Review</strong> to manually enter and approve them for the website.</p>
+        </div>
+      </section>
+
       <!-- SETTINGS VIEW -->
       <section class="view" id="view-settings">
         <div class="settings-wrap">
@@ -188,6 +208,28 @@
               <button type="submit" class="btn-primary">Update Password</button>
               <p class="pw-msg" id="pwMsg"></p>
             </form>
+          </div>
+
+          <div class="settings-card" id="jsonbinCard">
+            <h2>Reviews (JSONbin)</h2>
+            <p class="settings-desc">
+              Connect a free <strong>JSONbin.io</strong> account to publish approved reviews to your homepage.
+              Create an account, create a new bin with content <code style="font-size:0.82rem;color:var(--gold-lt);background:var(--bg3);padding:0.1rem 0.35rem">[]</code>,
+              set it to <strong>Public</strong>, then paste the Bin ID and Master Key below.
+            </p>
+            <div class="form-group">
+              <label>JSONbin Master Key</label>
+              <input type="password" id="jsonbinKey" placeholder="$2b$10$..." autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label>JSONbin Bin ID</label>
+              <input type="text" id="jsonbinBinId" placeholder="64abc123..." />
+            </div>
+            <div class="settings-actions">
+              <button class="btn-primary" id="saveJsonbinBtn">Save Settings</button>
+              <button class="btn-outline" id="testJsonbinBtn">Test Connection</button>
+            </div>
+            <p class="pw-msg" id="jsonbinMsg"></p>
           </div>
 
           <div class="settings-card">
@@ -333,6 +375,127 @@
             </div>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVIEW MODAL -->
+  <div class="modal-backdrop" id="reviewModalBackdrop">
+    <div class="modal" id="reviewModal">
+      <div class="modal-header">
+        <h2 id="reviewModalTitle">Add Review</h2>
+        <button class="modal-close" id="reviewModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="reviewForm">
+          <input type="hidden" id="reviewId" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Customer Name</label>
+              <input type="text" id="rvCustomerName" placeholder="Name from feedback email" />
+            </div>
+            <div class="form-group">
+              <label>Rating *</label>
+              <select id="rvRating" required>
+                <option value="">Select...</option>
+                <option value="5">5 Stars &#9733;&#9733;&#9733;&#9733;&#9733;</option>
+                <option value="4">4 Stars &#9733;&#9733;&#9733;&#9733;</option>
+                <option value="3">3 Stars &#9733;&#9733;&#9733;</option>
+                <option value="2">2 Stars &#9733;&#9733;</option>
+                <option value="1">1 Star &#9733;</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Service</label>
+              <select id="rvService">
+                <option value="">Select...</option>
+                <option>Wedding Florals</option>
+                <option>Custom Bouquet</option>
+                <option>Event Florals</option>
+                <option>Sympathy &amp; Tributes</option>
+                <option>Delivery</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="rvDate" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Review Text *</label>
+            <textarea id="rvText" rows="4" placeholder="Paste review text from the feedback email..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Photo URL (optional)</label>
+            <input type="url" id="rvPhotoUrl" placeholder="https://... (paste a link to the customer's photo if they shared one)" />
+            <p style="font-size:0.7rem;color:var(--cream-dk);margin-top:0.3rem;opacity:0.65">Download the photo from Formspree, upload to Imgur or Google Photos, then paste the link here.</p>
+          </div>
+          <div class="form-row checkrow">
+            <label class="check-label">
+              <input type="checkbox" id="rvAnonymous" />
+              <span>Keep Anonymous</span>
+            </label>
+            <label class="check-label">
+              <input type="checkbox" id="rvApproved" />
+              <span>Approve &amp; Publish to Website</span>
+            </label>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-outline" id="deleteReviewBtn"
+                    style="display:none;border-color:#c06060;color:#c06060">Delete</button>
+            <div class="modal-footer-right">
+              <button type="button" class="btn-outline" id="cancelReviewBtn">Cancel</button>
+              <button type="submit" class="btn-primary" id="saveReviewBtn">Save Review</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMAIL DRAFT MODAL -->
+  <div class="email-modal-backdrop" id="emailModalBackdrop">
+    <div class="email-modal">
+      <div class="modal-header">
+        <h2 id="emailModalTitle">Notify Customer</h2>
+        <button class="modal-close" id="emailModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="email-modal-intro" id="emailModalIntro"></p>
+        <div class="email-preview">
+          <div class="email-preview-row">
+            <span class="email-preview-label">To</span>
+            <span class="email-preview-val" id="emailTo"></span>
+          </div>
+          <div class="email-preview-row">
+            <span class="email-preview-label">Subject</span>
+            <span class="email-preview-val" id="emailSubject"></span>
+          </div>
+          <div class="email-preview-body" id="emailBody"></div>
+        </div>
+
+        <!-- Thank-you section — shown only for Delivered status -->
+        <div id="emailThankYouSection" style="display:none">
+          <hr style="border:none;border-top:1px solid var(--border);margin:1.5rem 0" />
+          <p class="email-modal-intro">You can also send a separate thank-you with a feedback link:</p>
+          <div class="email-preview">
+            <div class="email-preview-row">
+              <span class="email-preview-label">Subject</span>
+              <span class="email-preview-val">Thank You from Be Flourished Florist &#127800;</span>
+            </div>
+            <div class="email-preview-body" id="emailThankYouBody"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="emailSkipBtn">Skip — Don&rsquo;t Send</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-outline" id="emailThankYouBtn" style="display:none">Open Thank-You Email</button>
+          <button type="button" class="btn-primary" id="emailOpenBtn">Open in Email App</button>
+        </div>
       </div>
     </div>
   </div>

@@ -235,3 +235,87 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     }
   });
 });
+
+// ============================================================
+//  REVIEWS — Fetch from JSONbin and render on homepage
+//
+//  One-time setup:
+//   1. Create a free account at jsonbin.io
+//   2. Create a bin with content []  and set it to Public
+//   3. Copy the Bin ID and replace 'YOUR_JSONBIN_BIN_ID' below
+//   4. In dashboard Settings, enter your Master Key + Bin ID
+// ============================================================
+(async function loadReviews() {
+  const JSONBIN_BIN_ID = 'YOUR_JSONBIN_BIN_ID';
+  if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'YOUR_JSONBIN_BIN_ID') return;
+
+  const section = document.getElementById('reviews');
+  const loading = document.getElementById('reviewsLoading');
+  const grid    = document.getElementById('reviewsGrid');
+
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`);
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    const reviewList = Array.isArray(data.record) ? data.record : [];
+
+    if (reviewList.length === 0) return;
+
+    loading.style.display = 'none';
+    grid.innerHTML = reviewList.map(r => renderReviewCard(r)).join('');
+
+    section.style.display = 'block';
+
+    requestAnimationFrame(() => {
+      grid.querySelectorAll('.review-card-pub').forEach((card, i) => {
+        card.classList.add('reveal');
+        if (i % 3 > 0) card.classList.add(`reveal-delay-${i % 3}`);
+        observer.observe(card);
+      });
+    });
+  } catch {
+    // Silently fail — section stays hidden
+  }
+})();
+
+function renderReviewCard(r) {
+  const stars = Array.from({ length: 5 }, (_, i) =>
+    i < (r.rating || 0)
+      ? '<span>&#9733;</span>'
+      : '<span class="empty-star">&#9733;</span>'
+  ).join('');
+
+  const name = r.anonymous ? 'Verified Customer' : (r.customerName || 'Verified Customer');
+
+  const photoHtml = r.photoUrl
+    ? `<div class="rv-pub-photo"><img src="${escHtml(r.photoUrl)}" alt="Customer arrangement photo" loading="lazy" /></div>`
+    : '';
+
+  const dateStr = r.date
+    ? new Date(r.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : '';
+
+  return `
+    <article class="review-card-pub">
+      <div class="rv-pub-stars">${stars}</div>
+      <p class="rv-pub-text">&ldquo;${escHtml(r.text)}&rdquo;</p>
+      ${photoHtml}
+      <div class="rv-pub-footer">
+        <div class="rv-pub-customer">
+          <span class="rv-pub-name">${escHtml(name)}</span>
+          <span class="rv-pub-meta">${escHtml(r.service || '')}${dateStr ? ' &middot; ' + dateStr : ''}</span>
+        </div>
+        <span class="rv-pub-badge">&#10003; Verified Customer</span>
+      </div>
+    </article>`;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
