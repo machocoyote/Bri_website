@@ -40,6 +40,9 @@
         <a href="#" class="nav-item active" data-view="overview">
           <span class="nav-icon">&#9783;</span> Overview
         </a>
+        <a href="#" class="nav-item" data-view="inquiries">
+          <span class="nav-icon">&#9993;</span> Inquiries
+        </a>
         <a href="#" class="nav-item" data-view="orders">
           <span class="nav-icon">&#9741;</span> Orders
         </a>
@@ -67,6 +70,7 @@
         <button class="topbar-menu" id="menuBtn">&#9776;</button>
         <div class="topbar-title" id="topbarTitle">Overview</div>
         <button class="btn-primary topbar-add" id="topbarAddBtn">+ New Order</button>
+
       </header>
 
       <!-- OVERVIEW VIEW -->
@@ -93,6 +97,11 @@
             <div class="stat-label">Balance Outstanding</div>
             <div class="stat-value" id="stat-outstanding">$0</div>
             <div class="stat-sub">Unpaid balances</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Open Inquiries</div>
+            <div class="stat-value" id="stat-inquiries">0</div>
+            <div class="stat-sub">New &amp; Contacted</div>
           </div>
         </div>
 
@@ -150,6 +159,26 @@
             <h3>No orders yet</h3>
             <p>When you add an order it will appear here. Start by tapping <strong>+ New Order</strong> above.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- INQUIRIES VIEW -->
+      <section class="view" id="view-inquiries">
+        <div class="orders-toolbar">
+          <div class="filter-tabs" id="inqFilterTabs">
+            <button class="filter-tab active" data-status="all">All</button>
+            <button class="filter-tab" data-status="New">New</button>
+            <button class="filter-tab" data-status="Contacted">Contacted</button>
+            <button class="filter-tab" data-status="Quoted">Quoted</button>
+            <button class="filter-tab" data-status="Converted">Converted</button>
+            <button class="filter-tab" data-status="Declined">Declined</button>
+          </div>
+        </div>
+        <div class="inquiries-list" id="inquiriesList"></div>
+        <div class="empty-state" id="inquiriesEmpty" style="display:none">
+          <div class="empty-icon">&#9993;</div>
+          <h3>No inquiries yet</h3>
+          <p>Log inquiries from the contact form, phone calls, or walk-ins. Convert them to orders when you're ready to book.</p>
         </div>
       </section>
 
@@ -230,6 +259,42 @@
               <button class="btn-outline" id="testJsonbinBtn">Test Connection</button>
             </div>
             <p class="pw-msg" id="jsonbinMsg"></p>
+          </div>
+
+          <div class="settings-card" id="paymentSettingsCard">
+            <h2>Payment Links</h2>
+            <p class="settings-desc">Save your payment handles so they're included automatically in payment request emails sent to customers.</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label>PayPal.me Link</label>
+                <input type="url" id="paypalLink" placeholder="https://paypal.me/yourhandle" />
+              </div>
+              <div class="form-group">
+                <label>Venmo Handle</label>
+                <input type="text" id="venmoHandle" placeholder="@yourhandle" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Cash App $Cashtag</label>
+                <input type="text" id="cashappTag" placeholder="$yourhandle" />
+              </div>
+              <div class="form-group">
+                <label>Zelle (email or phone)</label>
+                <input type="text" id="zelleInfo" placeholder="beflourishedflorals@gmail.com" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Apple Pay / Square Link</label>
+                <input type="url" id="applePayLink" placeholder="https://square.link/u/..." />
+                <p style="font-size:0.7rem;color:var(--cream-dk);margin-top:0.3rem;opacity:0.65">Create a free Square payment link at squareup.com — customers can pay with Apple Pay, Google Pay, or card.</p>
+              </div>
+            </div>
+            <div class="settings-actions">
+              <button class="btn-primary" id="savePaymentSettingsBtn">Save Payment Settings</button>
+            </div>
+            <p class="pw-msg" id="paymentSettingsMsg"></p>
           </div>
 
           <div class="settings-card">
@@ -496,6 +561,144 @@
           <button type="button" class="btn-outline" id="emailThankYouBtn" style="display:none">Open Thank-You Email</button>
           <button type="button" class="btn-primary" id="emailOpenBtn">Open in Email App</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INQUIRY MODAL -->
+  <div class="modal-backdrop" id="inquiryModalBackdrop">
+    <div class="modal" id="inquiryModal">
+      <div class="modal-header">
+        <h2 id="inquiryModalTitle">New Inquiry</h2>
+        <button class="modal-close" id="inquiryModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="inquiryForm">
+          <input type="hidden" id="inquiryId" />
+          <div class="modal-section-label">Contact Info</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Name *</label>
+              <input type="text" id="inqName" required placeholder="Full name" />
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="tel" id="inqPhone" placeholder="216-555-0000" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="inqEmail" placeholder="customer@email.com" />
+          </div>
+
+          <div class="modal-section-label">Request Details</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Service Interest</label>
+              <select id="inqService">
+                <option value="">Select service...</option>
+                <option>Wedding Florals</option>
+                <option>Custom Bouquet</option>
+                <option>Event Florals</option>
+                <option>Sympathy &amp; Tributes</option>
+                <option>Dried &amp; Preserved</option>
+                <option>Delivery</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Event Date (if known)</label>
+              <input type="date" id="inqEventDate" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Budget Range</label>
+            <input type="text" id="inqBudget" placeholder="e.g. $100–$200" />
+          </div>
+          <div class="form-group">
+            <label>Message / Request</label>
+            <textarea id="inqMessage" rows="3" placeholder="What they're looking for..."></textarea>
+          </div>
+
+          <div class="modal-section-label">Status &amp; Notes</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Status</label>
+              <select id="inqStatus">
+                <option>New</option>
+                <option>Contacted</option>
+                <option>Quoted</option>
+                <option>Converted</option>
+                <option>Declined</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Internal Notes</label>
+            <textarea id="inqNotes" rows="2" placeholder="Notes for yourself..."></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-outline" id="deleteInquiryBtn"
+                    style="display:none;border-color:#c06060;color:#c06060">Delete</button>
+            <div class="modal-footer-right">
+              <button type="button" class="btn-outline" id="sendDetailsRequestBtn">&#9993; Details Request</button>
+              <button type="button" class="btn-primary" id="convertToOrderBtn" style="display:none">&#8594; Convert to Order</button>
+              <button type="button" class="btn-outline" id="cancelInquiryBtn">Cancel</button>
+              <button type="submit" class="btn-primary" id="saveInquiryBtn">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT MODAL -->
+  <div class="modal-backdrop" id="paymentModalBackdrop">
+    <div class="modal" id="paymentModal">
+      <div class="modal-header">
+        <h2>Request Payment</h2>
+        <button class="modal-close" id="paymentModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="paymentForm">
+          <input type="hidden" id="paymentOrderId" />
+          <p class="payment-order-summary" id="paymentOrderSummary"></p>
+          <div class="modal-section-label">Payment Details</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount to Request ($) *</label>
+              <input type="number" id="paymentAmount" min="0" step="0.01" placeholder="0.00" required />
+            </div>
+            <div class="form-group">
+              <label>Payment Method</label>
+              <select id="paymentMethod">
+                <option value="">Select method...</option>
+                <option>PayPal</option>
+                <option>Venmo</option>
+                <option>CashApp</option>
+                <option>Zelle</option>
+                <option>Apple Pay</option>
+                <option>Cash</option>
+                <option>Check</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Note to Customer (optional)</label>
+            <textarea id="paymentNote" rows="2" placeholder="e.g. This covers your deposit to lock in your date."></textarea>
+          </div>
+          <div class="payment-link-preview" id="paymentLinkPreview" style="display:none">
+            <p class="settings-desc" style="margin:0 0 0.35rem">Payment link included in email:</p>
+            <code id="paymentLinkCode"></code>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-outline mark-paid-btn" id="markAsPaidBtn">&#10003; Mark as Paid</button>
+            <div class="modal-footer-right">
+              <button type="button" class="btn-outline" id="cancelPaymentBtn">Cancel</button>
+              <button type="submit" class="btn-primary">&#9993; Send Payment Request</button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>

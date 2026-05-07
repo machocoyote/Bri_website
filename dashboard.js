@@ -2,28 +2,37 @@
 //  BE FLOURISHED — Order Management Dashboard
 // ============================================================
 
-const DEFAULT_PASSWORD    = 'flourish2026';
-const STORAGE_KEY         = 'bf_orders';
-const PW_KEY              = 'bf_pw';
-const REVIEWS_KEY         = 'bf_reviews';
-const JSONBIN_KEY_STORAGE = 'bf_jsonbin_key';
-const JSONBIN_BIN_STORAGE = 'bf_jsonbin_bin';
+const DEFAULT_PASSWORD      = 'flourish2026';
+const STORAGE_KEY           = 'bf_orders';
+const PW_KEY                = 'bf_pw';
+const REVIEWS_KEY           = 'bf_reviews';
+const JSONBIN_KEY_STORAGE   = 'bf_jsonbin_key';
+const JSONBIN_BIN_STORAGE   = 'bf_jsonbin_bin';
+const INQUIRIES_KEY         = 'bf_inquiries';
+const PAYMENT_SETTINGS_KEY  = 'bf_payment_settings';
 
-let orders       = [];
-let reviews      = [];
-let calYear      = new Date().getFullYear();
-let calMonth     = new Date().getMonth();
-let activeView   = 'overview';
-let filterStatus = 'all';
-let searchQuery  = '';
-let editingId    = null;
+let orders          = [];
+let reviews         = [];
+let inquiries       = [];
+let paymentSettings = {};
+let calYear         = new Date().getFullYear();
+let calMonth        = new Date().getMonth();
+let activeView      = 'overview';
+let filterStatus    = 'all';
+let inqFilterStatus = 'all';
+let searchQuery     = '';
+let editingId       = null;
+let editingInquiryId = null;
 
 // ── Init ──
 function init() {
-  orders  = JSON.parse(localStorage.getItem(STORAGE_KEY)  || '[]');
-  reviews = JSON.parse(localStorage.getItem(REVIEWS_KEY)  || '[]');
+  orders          = JSON.parse(localStorage.getItem(STORAGE_KEY)          || '[]');
+  reviews         = JSON.parse(localStorage.getItem(REVIEWS_KEY)          || '[]');
+  inquiries       = JSON.parse(localStorage.getItem(INQUIRIES_KEY)        || '[]');
+  paymentSettings = JSON.parse(localStorage.getItem(PAYMENT_SETTINGS_KEY) || '{}');
   if (!localStorage.getItem(PW_KEY)) localStorage.setItem(PW_KEY, DEFAULT_PASSWORD);
   initJsonbinSettings();
+  initPaymentSettings();
   if (sessionStorage.getItem('bf_auth') === '1') showApp();
 }
 
@@ -119,12 +128,14 @@ function switchView(view) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`view-${view}`).classList.add('active');
   document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
-  const titles = { overview: 'Overview', orders: 'Orders', calendar: 'Calendar', reviews: 'Reviews', settings: 'Settings' };
+  const titles = { overview: 'Overview', inquiries: 'Inquiries', orders: 'Orders', calendar: 'Calendar', reviews: 'Reviews', settings: 'Settings' };
   document.getElementById('topbarTitle').textContent = titles[view] || '';
-  if (view === 'overview') renderOverview();
-  if (view === 'orders')   { updateTabCounts(); renderOrders(); }
-  if (view === 'calendar') renderCalendar();
-  if (view === 'reviews')  renderReviews();
+  document.getElementById('topbarAddBtn').textContent = view === 'inquiries' ? '+ New Inquiry' : '+ New Order';
+  if (view === 'overview')   renderOverview();
+  if (view === 'inquiries')  { updateInqTabCounts(); renderInquiries(); }
+  if (view === 'orders')     { updateTabCounts(); renderOrders(); }
+  if (view === 'calendar')   renderCalendar();
+  if (view === 'reviews')    renderReviews();
 }
 
 // Mobile sidebar
@@ -147,6 +158,8 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('emailModalBackdrop').classList.contains('open')) { closeEmailModal(); return; }
   if (document.getElementById('modalBackdrop').classList.contains('open')) { closeModal(); return; }
   if (document.getElementById('reviewModalBackdrop').classList.contains('open')) { closeReviewModal(); return; }
+  if (document.getElementById('inquiryModalBackdrop').classList.contains('open')) { closeInquiryModal(); return; }
+  if (document.getElementById('paymentModalBackdrop').classList.contains('open')) { closePaymentModal(); return; }
   if (document.getElementById('detailBackdrop').classList.contains('open')) { closeDetail(); return; }
   closeSidebar();
 });
@@ -216,6 +229,9 @@ function renderOverview() {
       return sum + Math.max(0, bal);
     }, 0);
   document.getElementById('stat-outstanding').textContent = fmtMoney(outstanding);
+
+  const openInqs = inquiries.filter(i => i.status === 'New' || i.status === 'Contacted').length;
+  document.getElementById('stat-inquiries').textContent = openInqs;
 
   // Recent orders (last 5)
   const recent = [...orders].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
@@ -434,7 +450,10 @@ function renderCalendar() {
 const modalBackdrop = document.getElementById('modalBackdrop');
 const orderForm     = document.getElementById('orderForm');
 
-document.getElementById('topbarAddBtn').addEventListener('click', () => openModal(null));
+document.getElementById('topbarAddBtn').addEventListener('click', () => {
+  if (activeView === 'inquiries') openInquiryModal(null);
+  else openModal(null);
+});
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
@@ -530,9 +549,10 @@ document.getElementById('deleteOrderBtn').addEventListener('click', async () => 
 });
 
 function refreshCurrentView() {
-  if (activeView === 'overview') renderOverview();
-  if (activeView === 'orders')   { updateTabCounts(); renderOrders(); }
-  if (activeView === 'calendar') renderCalendar();
+  if (activeView === 'overview')  renderOverview();
+  if (activeView === 'inquiries') { updateInqTabCounts(); renderInquiries(); }
+  if (activeView === 'orders')    { updateTabCounts(); renderOrders(); }
+  if (activeView === 'calendar')  renderCalendar();
 }
 
 // ============================================================
@@ -629,6 +649,20 @@ function openDetail(id) {
     <div class="detail-row">
       <div class="detail-label">Order Created</div>
       <div class="detail-value">${new Date(o.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
+    </div>
+    <hr class="detail-divider" />
+    <div class="payment-section">
+      <div class="payment-status-row">
+        <div>
+          <span class="payment-status-pill pmt-${o.paymentStatus || 'unpaid'}">
+            ${o.paymentStatus === 'Paid' ? '&#10003; Paid' : o.paymentStatus === 'Requested' ? '&#8987; Requested' : '&#9675; Unpaid'}
+          </span>
+        </div>
+        <div class="payment-section-actions">
+          ${o.paymentStatus !== 'Paid' ? `<button class="btn-primary" id="requestPaymentBtn">Request Payment</button>` : ''}
+          ${o.paymentStatus === 'Requested' ? `<button class="btn-outline mark-paid-inline" id="markPaidInlineBtn">&#10003; Mark Paid</button>` : ''}
+        </div>
+      </div>
     </div>`;
 
   document.getElementById('detailStatusSelect').addEventListener('change', async e => {
@@ -646,6 +680,14 @@ function openDetail(id) {
         showToast('No customer email on file — skipping email prompt.', 'info');
       }
     }
+  });
+
+  document.getElementById('requestPaymentBtn')?.addEventListener('click', () => openPaymentModal(id));
+  document.getElementById('markPaidInlineBtn')?.addEventListener('click', async () => {
+    const confirmed = await showConfirm('Mark this payment as received in full?', 'Mark Paid');
+    if (!confirmed) return;
+    markOrderPaid(id);
+    closeDetail();
   });
 
   detailBackdrop.classList.add('open');
@@ -1107,6 +1149,351 @@ function showEmailModal(order, newStatus) {
 
     emailModalBackdrop.classList.add('open');
   });
+}
+
+// ============================================================
+//  INQUIRIES
+// ============================================================
+function saveInquiries() { localStorage.setItem(INQUIRIES_KEY, JSON.stringify(inquiries)); }
+
+function updateInqTabCounts() {
+  const counts = {};
+  inquiries.forEach(i => { counts[i.status] = (counts[i.status] || 0) + 1; });
+  document.querySelectorAll('#inqFilterTabs .filter-tab').forEach(tab => {
+    const s = tab.dataset.status;
+    const n = s === 'all' ? inquiries.length : (counts[s] || 0);
+    tab.textContent = `${s === 'all' ? 'All' : s} (${n})`;
+  });
+}
+
+document.getElementById('inqFilterTabs').addEventListener('click', e => {
+  const tab = e.target.closest('.filter-tab');
+  if (!tab) return;
+  document.querySelectorAll('#inqFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  inqFilterStatus = tab.dataset.status;
+  renderInquiries();
+});
+
+function renderInquiries() {
+  let list = [...inquiries];
+  if (inqFilterStatus !== 'all') list = list.filter(i => i.status === inqFilterStatus);
+  list.sort((a, b) => b.createdAt - a.createdAt);
+
+  const container = document.getElementById('inquiriesList');
+  const empty     = document.getElementById('inquiriesEmpty');
+
+  if (list.length === 0) {
+    container.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  container.innerHTML = list.map(i => `
+    <div class="inquiry-card status-${i.status}" data-id="${i.id}">
+      <div class="inq-card-header">
+        <span class="inq-card-name">${i.name}</span>
+        <span class="inq-status-badge inq-status-${i.status}">${i.status}</span>
+      </div>
+      <div class="inq-card-service">${i.service || 'General inquiry'}${i.eventDate ? ' &middot; ' + fmt(i.eventDate) : ''}${i.budget ? ' &middot; ' + i.budget : ''}</div>
+      ${i.message ? `<div class="inq-card-meta">${i.message.length > 100 ? i.message.slice(0, 100) + '…' : i.message}</div>` : ''}
+      <div class="inq-card-contact">
+        ${i.phone ? `<a href="tel:${i.phone}" onclick="event.stopPropagation()">${i.phone}</a>` : ''}
+        ${i.phone && i.email ? ' &middot; ' : ''}
+        ${i.email ? `<a href="mailto:${i.email}" onclick="event.stopPropagation()">${i.email}</a>` : ''}
+      </div>
+    </div>`).join('');
+
+  container.querySelectorAll('.inquiry-card').forEach(el => {
+    el.addEventListener('click', () => openInquiryModal(el.dataset.id));
+  });
+}
+
+// ── Inquiry Modal ──
+const inquiryModalBackdrop = document.getElementById('inquiryModalBackdrop');
+const inquiryForm          = document.getElementById('inquiryForm');
+
+document.getElementById('inquiryModalClose').addEventListener('click', closeInquiryModal);
+document.getElementById('cancelInquiryBtn').addEventListener('click', closeInquiryModal);
+inquiryModalBackdrop.addEventListener('click', e => { if (e.target === inquiryModalBackdrop) closeInquiryModal(); });
+
+function openInquiryModal(id) {
+  editingInquiryId = id || null;
+  document.getElementById('inquiryModalTitle').textContent       = id ? 'Edit Inquiry' : 'New Inquiry';
+  document.getElementById('deleteInquiryBtn').style.display      = id ? 'inline-block' : 'none';
+  document.getElementById('convertToOrderBtn').style.display     = id ? 'inline-block' : 'none';
+
+  if (id) {
+    const i = inquiries.find(x => x.id === id);
+    if (!i) return;
+    document.getElementById('inquiryId').value    = i.id;
+    document.getElementById('inqName').value      = i.name      || '';
+    document.getElementById('inqPhone').value     = i.phone     || '';
+    document.getElementById('inqEmail').value     = i.email     || '';
+    document.getElementById('inqService').value   = i.service   || '';
+    document.getElementById('inqEventDate').value = i.eventDate || '';
+    document.getElementById('inqBudget').value    = i.budget    || '';
+    document.getElementById('inqMessage').value   = i.message   || '';
+    document.getElementById('inqStatus').value    = i.status    || 'New';
+    document.getElementById('inqNotes').value     = i.notes     || '';
+  } else {
+    inquiryForm.reset();
+    document.getElementById('inquiryId').value = '';
+  }
+
+  inquiryModalBackdrop.classList.add('open');
+  setTimeout(() => document.getElementById('inqName').focus(), 100);
+}
+
+function closeInquiryModal() {
+  inquiryModalBackdrop.classList.remove('open');
+  editingInquiryId = null;
+}
+
+inquiryForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const isNew = !editingInquiryId;
+  const id    = document.getElementById('inquiryId').value || genId();
+  const inq   = {
+    id,
+    createdAt:  isNew ? Date.now() : (inquiries.find(x => x.id === editingInquiryId)?.createdAt || Date.now()),
+    name:       document.getElementById('inqName').value.trim(),
+    phone:      document.getElementById('inqPhone').value.trim(),
+    email:      document.getElementById('inqEmail').value.trim(),
+    service:    document.getElementById('inqService').value,
+    eventDate:  document.getElementById('inqEventDate').value,
+    budget:     document.getElementById('inqBudget').value.trim(),
+    message:    document.getElementById('inqMessage').value.trim(),
+    status:     document.getElementById('inqStatus').value,
+    notes:      document.getElementById('inqNotes').value.trim(),
+  };
+
+  if (editingInquiryId) {
+    const idx = inquiries.findIndex(x => x.id === editingInquiryId);
+    if (idx > -1) inquiries[idx] = inq;
+    showToast('Inquiry updated.');
+  } else {
+    inquiries.unshift(inq);
+    showToast('New inquiry added!');
+  }
+
+  saveInquiries();
+  closeInquiryModal();
+  refreshCurrentView();
+});
+
+document.getElementById('deleteInquiryBtn').addEventListener('click', async () => {
+  if (!editingInquiryId) return;
+  const i         = inquiries.find(x => x.id === editingInquiryId);
+  const confirmed = await showConfirm(`Delete inquiry from ${i?.name || 'this person'}? This cannot be undone.`, 'Delete');
+  if (!confirmed) return;
+  inquiries = inquiries.filter(x => x.id !== editingInquiryId);
+  saveInquiries();
+  closeInquiryModal();
+  showToast('Inquiry deleted.', 'info');
+  refreshCurrentView();
+});
+
+document.getElementById('sendDetailsRequestBtn').addEventListener('click', () => {
+  const name    = document.getElementById('inqName').value.trim();
+  const email   = document.getElementById('inqEmail').value.trim();
+  const service = document.getElementById('inqService').value;
+  if (!email) { showToast('No email on file — enter customer email first.', 'error'); return; }
+  if (!name)  { showToast('Please enter the customer name first.', 'error'); return; }
+  const subject = "Let's plan your floral order — Be Flourished";
+  const body    = buildDetailsRequestBody({ name, service });
+  window.location.href = buildMailto(email, subject, body);
+});
+
+function buildDetailsRequestBody(inq) {
+  return `Hi ${inq.name},
+
+Thank you for your interest in Be Flourished Florist! We'd love to help make your event special.
+
+To get started, could you share a few details?
+
+  - Event type and date
+  - Number of arrangements needed
+  - Color palette or style preferences
+  - Flower preferences (or flowers to avoid)
+  - Delivery address (if applicable)
+  - Budget range
+
+Feel free to reply to this email or call/text us at 216-356-9761.
+
+Looking forward to creating something beautiful for you!
+
+With love,
+Be Flourished Florist
+beflourishedflorals@gmail.com | 216-356-9761`;
+}
+
+document.getElementById('convertToOrderBtn').addEventListener('click', () => {
+  const id = editingInquiryId || document.getElementById('inquiryId').value;
+  if (!id) return;
+  const idx = inquiries.findIndex(x => x.id === id);
+  if (idx > -1 && inquiries[idx].status !== 'Converted') {
+    inquiries[idx].status = 'Converted';
+    saveInquiries();
+  }
+  closeInquiryModal();
+  convertInquiryToOrder(id);
+});
+
+function convertInquiryToOrder(inquiryId) {
+  const inq = inquiries.find(x => x.id === inquiryId);
+  if (!inq) return;
+  switchView('orders');
+  openModal(null);
+  document.getElementById('customerName').value  = inq.name      || '';
+  document.getElementById('customerPhone').value = inq.phone     || '';
+  document.getElementById('customerEmail').value = inq.email     || '';
+  document.getElementById('orderService').value  = inq.service   || '';
+  document.getElementById('eventDate').value     = inq.eventDate || '';
+  document.getElementById('orderNotes').value    = [
+    inq.message ? `Request: ${inq.message}` : '',
+    inq.budget  ? `Budget: ${inq.budget}`   : '',
+    inq.notes   ? `Notes: ${inq.notes}`     : '',
+  ].filter(Boolean).join('\n');
+  showToast('Inquiry converted — review and save the order.', 'info');
+}
+
+// ============================================================
+//  PAYMENT SETTINGS
+// ============================================================
+function initPaymentSettings() {
+  const ps  = paymentSettings;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('paypalLink',   ps.paypalLink);
+  set('venmoHandle',  ps.venmoHandle);
+  set('cashappTag',   ps.cashappTag);
+  set('zelleInfo',    ps.zelleInfo);
+  set('applePayLink', ps.applePayLink);
+}
+
+document.getElementById('savePaymentSettingsBtn').addEventListener('click', () => {
+  paymentSettings = {
+    paypalLink:   document.getElementById('paypalLink').value.trim(),
+    venmoHandle:  document.getElementById('venmoHandle').value.trim(),
+    cashappTag:   document.getElementById('cashappTag').value.trim(),
+    zelleInfo:    document.getElementById('zelleInfo').value.trim(),
+    applePayLink: document.getElementById('applePayLink').value.trim(),
+  };
+  localStorage.setItem(PAYMENT_SETTINGS_KEY, JSON.stringify(paymentSettings));
+  const msg = document.getElementById('paymentSettingsMsg');
+  msg.textContent = 'Payment settings saved.';
+  msg.className = 'pw-msg success';
+  showToast('Payment settings saved.');
+});
+
+// ============================================================
+//  PAYMENT MODAL
+// ============================================================
+const paymentModalBackdrop = document.getElementById('paymentModalBackdrop');
+
+document.getElementById('paymentModalClose').addEventListener('click', closePaymentModal);
+document.getElementById('cancelPaymentBtn').addEventListener('click', closePaymentModal);
+paymentModalBackdrop.addEventListener('click', e => { if (e.target === paymentModalBackdrop) closePaymentModal(); });
+
+function openPaymentModal(orderId) {
+  const o = orders.find(x => x.id === orderId);
+  if (!o) return;
+  const balance = (parseFloat(o.totalPrice) || 0) - (parseFloat(o.depositAmount) || 0);
+  document.getElementById('paymentOrderId').value = orderId;
+  document.getElementById('paymentOrderSummary').textContent =
+    `${o.customerName} · ${o.service || 'Order'} · Balance due: ${fmtMoney(balance)}`;
+  document.getElementById('paymentAmount').value = Math.max(0, balance).toFixed(2);
+  document.getElementById('paymentMethod').value = '';
+  document.getElementById('paymentNote').value   = '';
+  document.getElementById('paymentLinkPreview').style.display = 'none';
+  paymentModalBackdrop.classList.add('open');
+}
+
+function closePaymentModal() { paymentModalBackdrop.classList.remove('open'); }
+
+document.getElementById('paymentMethod').addEventListener('change', e => {
+  const method = e.target.value;
+  const ps     = paymentSettings;
+  let link = '';
+  if (method === 'PayPal'    && ps.paypalLink)   link = ps.paypalLink;
+  if (method === 'Venmo'     && ps.venmoHandle)   link = `https://venmo.com/${ps.venmoHandle.replace('@', '')}`;
+  if (method === 'CashApp'   && ps.cashappTag)    link = `https://cash.app/${ps.cashappTag}`;
+  if (method === 'Zelle'     && ps.zelleInfo)     link = ps.zelleInfo;
+  if (method === 'Apple Pay' && ps.applePayLink)  link = ps.applePayLink;
+
+  const preview = document.getElementById('paymentLinkPreview');
+  if (link) {
+    document.getElementById('paymentLinkCode').textContent = link;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+});
+
+document.getElementById('paymentForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const orderId = document.getElementById('paymentOrderId').value;
+  const amount  = document.getElementById('paymentAmount').value;
+  const method  = document.getElementById('paymentMethod').value;
+  const note    = document.getElementById('paymentNote').value.trim();
+  const o       = orders.find(x => x.id === orderId);
+  if (!o) return;
+  if (!o.customerEmail) { showToast('No customer email on file.', 'error'); return; }
+
+  const idx = orders.findIndex(x => x.id === orderId);
+  if (idx > -1) { orders[idx].paymentStatus = 'Requested'; saveOrders(); }
+
+  const subject = 'Payment Request — Be Flourished Florist';
+  const body    = buildPaymentRequestBody(o, amount, method, note);
+  closePaymentModal();
+  refreshCurrentView();
+  showToast('Opening email with payment request…', 'info');
+  window.location.href = buildMailto(o.customerEmail, subject, body);
+});
+
+function buildPaymentRequestBody(o, amount, method, note) {
+  const ps = paymentSettings;
+  let payLine = '';
+  if (method === 'PayPal'    && ps.paypalLink)   payLine = `PayPal: ${ps.paypalLink}`;
+  if (method === 'Venmo'     && ps.venmoHandle)   payLine = `Venmo: ${ps.venmoHandle}`;
+  if (method === 'CashApp'   && ps.cashappTag)    payLine = `Cash App: ${ps.cashappTag}`;
+  if (method === 'Zelle'     && ps.zelleInfo)     payLine = `Zelle: ${ps.zelleInfo}`;
+  if (method === 'Apple Pay' && ps.applePayLink)  payLine = `Apple Pay / Card: ${ps.applePayLink}`;
+  if (method === 'Cash')   payLine = 'Cash — please coordinate payment with us directly.';
+  if (method === 'Check')  payLine = 'Check — please make payable to Be Flourished Florist.';
+
+  return `Hi ${o.customerName},
+
+A payment is ready for your order with Be Flourished Florist.
+
+  Service: ${o.service || '—'}
+  Event Date: ${o.eventDate ? fmt(o.eventDate) : '—'}
+  Amount Due: $${parseFloat(amount).toFixed(2)}${note ? `\n  Note: ${note}` : ''}
+
+${payLine ? `To pay:\n  ${payLine}\n` : ''}If you have any questions, please don't hesitate to reach out.
+
+With love,
+Be Flourished Florist
+beflourishedflorals@gmail.com | 216-356-9761`;
+}
+
+document.getElementById('markAsPaidBtn').addEventListener('click', async () => {
+  const orderId   = document.getElementById('paymentOrderId').value;
+  const confirmed = await showConfirm('Mark this payment as received in full?', 'Mark Paid');
+  if (!confirmed) return;
+  markOrderPaid(orderId);
+  closePaymentModal();
+});
+
+function markOrderPaid(orderId) {
+  const idx = orders.findIndex(x => x.id === orderId);
+  if (idx === -1) return;
+  orders[idx].balancePaid   = true;
+  orders[idx].paymentStatus = 'Paid';
+  saveOrders();
+  showToast('Payment marked as received!', 'success');
+  refreshCurrentView();
 }
 
 // ── Start ──

@@ -1392,3 +1392,153 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.8;
   white-space: pre-wrap;
 }
+
+/* ============================================================
+   INQUIRIES
+   ============================================================ */
+.inquiries-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem 0;
+}
+
+.inquiry-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold-dk);
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: border-left-color 0.2s, background 0.2s;
+}
+.inquiry-card:hover                 { background: var(--bg3); }
+.inquiry-card.status-Contacted      { border-left-color: #6b9abf; }
+.inquiry-card.status-Quoted         { border-left-color: #9b6bbf; }
+.inquiry-card.status-Converted      { border-left-color: #6bbf8e; }
+.inquiry-card.status-Declined       { border-left-color: #555; opacity: 0.6; }
+
+.inq-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.45rem;
+  gap: 0.5rem;
+}
+
+.inq-card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: var(--cream);
+}
+
+.inq-status-badge {
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.55rem;
+  white-space: nowrap;
+}
+.inq-status-New       { background: rgba(201,149,106,0.12); color: var(--gold-lt); border: 1px solid rgba(201,149,106,0.28); }
+.inq-status-Contacted { background: rgba(107,154,191,0.12); color: #6b9abf;        border: 1px solid rgba(107,154,191,0.28); }
+.inq-status-Quoted    { background: rgba(155,107,191,0.12); color: #9b6bbf;        border: 1px solid rgba(155,107,191,0.28); }
+.inq-status-Converted { background: rgba(107,191,142,0.12); color: #6bbf8e;        border: 1px solid rgba(107,191,142,0.28); }
+.inq-status-Declined  { background: rgba(102,102,102,0.12); color: #888;           border: 1px solid rgba(102,102,102,0.28); }
+
+.inq-card-service { font-size: 0.78rem; color: var(--gold); margin-bottom: 0.3rem; }
+.inq-card-contact { font-size: 0.8rem;  color: var(--cream-dk); opacity: 0.75; }
+.inq-card-meta    { font-size: 0.74rem; color: var(--cream-dk); opacity: 0.55; margin-top: 0.35rem; }
+
+/* ============================================================
+   PAYMENT — detail panel section
+   ============================================================ */
+.payment-section {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  margin: 0.5rem 0;
+}
+
+.payment-section-title {
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cream-dk);
+  opacity: 0.6;
+  margin-bottom: 0.65rem;
+}
+
+.payment-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.payment-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  padding: 0.22rem 0.7rem;
+}
+.pmt-unpaid    { background: rgba(201,149,106,0.1); color: var(--gold-lt); border: 1px solid rgba(201,149,106,0.22); }
+.pmt-requested { background: rgba(107,154,191,0.1); color: #6b9abf;        border: 1px solid rgba(107,154,191,0.22); }
+.pmt-paid      { background: rgba(107,191,142,0.1); color: #6bbf8e;        border: 1px solid rgba(107,191,142,0.22); }
+
+.payment-amount-label {
+  font-size: 0.9rem;
+  color: var(--gold-lt);
+  font-weight: 600;
+}
+
+.payment-section-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.payment-section-actions .btn-primary,
+.payment-section-actions .btn-outline {
+  font-size: 0.78rem;
+  padding: 0.45rem 0.9rem;
+}
+
+.mark-paid-inline { border-color: #6bbf8e; color: #6bbf8e; }
+.mark-paid-inline:hover { background: rgba(107,191,142,0.1); }
+
+/* ============================================================
+   PAYMENT MODAL
+   ============================================================ */
+.payment-order-summary {
+  font-size: 0.86rem;
+  color: var(--cream-dk);
+  padding: 0.75rem 1rem;
+  background: var(--bg3);
+  border-left: 2px solid var(--gold);
+  margin-bottom: 1.25rem;
+}
+
+.payment-link-preview {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  margin-top: 0.85rem;
+}
+.payment-link-preview code {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--gold-lt);
+  word-break: break-all;
+  margin-top: 0.35rem;
+}
+
+.mark-paid-btn {
+  border-color: #6bbf8e;
+  color: #6bbf8e;
+}
+.mark-paid-btn:hover { background: rgba(107,191,142,0.1); }
+
+/* payment settings card spans full width */
+#paymentSettingsCard { grid-column: 1 / -1; }
