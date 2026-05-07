@@ -1263,20 +1263,22 @@ a { color: inherit; text-decoration: none; }
 }
 .mdn-title {
   font-family: 'Playfair Display', serif;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--gold-lt);
   letter-spacing: 0.02em;
+  min-width: 0;
 }
 .mdn-deadline-pill {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.03em;
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 20px;
   background: rgba(192,80,80,0.2);
   border: 1px solid rgba(192,80,80,0.4);
   color: #e08080;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .mdn-body {
   padding: 0.85rem 1rem;
@@ -1310,6 +1312,7 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.6;
 }
 .success-payment-reminder strong { color: var(--gold-lt); }
-@media (max-width: 420px) {
-  .mdn-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+@media (max-width: 600px) {
+  .mdn-header { flex-wrap: wrap; gap: 0.4rem; }
+  .mdn-title { font-size: 1rem; }
 }
