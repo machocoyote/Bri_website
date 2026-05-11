@@ -83,6 +83,8 @@ const HOLIDAYS = [
     tagline:    "Say it with flowers this February 14th",
     cta:        "Order for Valentine's",
     windowDays: 35,
+    cutoffDays: 2,
+    showNotice: true,
     getDate:    (y) => new Date(y, 1, 14),
   },
   {
@@ -111,9 +113,11 @@ const HOLIDAYS = [
   },
   {
     name:       "Mother's Day",
-    tagline:    "Pre-orders now open — secure Mom's arrangement before we fill up!",
-    cta:        "Pre-Order Now",
+    tagline:    "Secure Mom's arrangement before we fill up!",
+    cta:        "Order Now",
     windowDays: 45,
+    cutoffDays: 2,
+    showNotice: true,
     pinned:     true,
     getDate:    (y) => {
       const d = new Date(y, 4, 1);
@@ -133,6 +137,8 @@ const HOLIDAYS = [
     tagline:    "Show Dad some love with a unique arrangement",
     cta:        "Order for Dad",
     windowDays: 28,
+    cutoffDays: 2,
+    showNotice: true,
     getDate:    (y) => {
       const d = new Date(y, 5, 1);
       const firstSun = d.getDay() === 0 ? 1 : 8 - d.getDay();
@@ -168,6 +174,8 @@ const HOLIDAYS = [
     tagline:    "Add warmth and beauty to your holiday table",
     cta:        "Order a Centerpiece",
     windowDays: 21,
+    cutoffDays: 2,
+    showNotice: true,
     getDate:    (y) => {
       let count = 0;
       for (let d = 1; d <= 30; d++)
@@ -179,6 +187,8 @@ const HOLIDAYS = [
     tagline:    "Deck the halls with beautiful holiday florals",
     cta:        "Order Holiday Arrangements",
     windowDays: 35,
+    cutoffDays: 3,
+    showNotice: true,
     getDate:    (y) => new Date(y, 11, 25),
   },
 ];
@@ -197,7 +207,8 @@ const HOLIDAYS = [
     if (date < today) date = h.getDate(year + 1);
     if (!date) continue;
     const days = Math.round((date - today) / 86400000);
-    if (days >= 0 && days <= h.windowDays) candidates.push({ h, days });
+    const cutoff = h.cutoffDays ?? 1;
+    if (days >= cutoff && days <= h.windowDays) candidates.push({ h, days });
   }
 
   if (candidates.length === 0) return;
@@ -224,6 +235,41 @@ const HOLIDAYS = [
     sessionStorage.setItem('bf_banner_dismissed', '1');
   });
 })();
+
+function initHolidayNotice() {
+  const el = document.getElementById('holidayNotice');
+  if (!el) return;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const year  = today.getFullYear();
+  for (const h of HOLIDAYS) {
+    if (!h.showNotice) continue;
+    let hDate = h.getDate(year);
+    if (!hDate) continue;
+    if (hDate < today) hDate = h.getDate(year + 1);
+    if (!hDate) continue;
+    const days   = Math.round((hDate - today) / 86400000);
+    const cutoff = h.cutoffDays ?? 2;
+    if (days >= cutoff && days <= 14) {
+      const cutoffDate = new Date(hDate);
+      cutoffDate.setDate(hDate.getDate() - cutoff);
+      const fmt = cutoffDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' });
+      el.innerHTML = `
+        <div class="mdn-header">
+          <span class="mdn-title">🌸 ${h.name}</span>
+          <span class="mdn-deadline-pill">Deadline: ${fmt}</span>
+        </div>
+        <div class="mdn-body">
+          <p>Full payment is required at time of booking to secure your arrangement. Orders placed after ${fmt} cannot be guaranteed.</p>
+          <p class="mdn-payment">After submitting this form, please send payment to confirm your order:<br>
+            <a href="PAYMENT_LINK_HERE" class="mdn-pay-link">PAYMENT_LINK_HERE</a>
+          </p>
+        </div>`;
+      el.style.display = 'block';
+      return;
+    }
+  }
+}
+initHolidayNotice();
 
 // Smooth scroll for all anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
