@@ -212,6 +212,10 @@ a { color: inherit; text-decoration: none; }
   .banner-inner { gap: 0.6rem; }
 }
 
+@media (max-width: 480px) {
+  .banner-countdown { display: none; }
+}
+
 /* ============================================================
    NAV
    ============================================================ */
